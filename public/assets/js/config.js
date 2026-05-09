@@ -31,8 +31,8 @@ const CONFIG = {
   // Minimum deposit dalam IDR
   MIN_DEPOSIT: 10000,
 
-  // Markup harga dari provider (1.3 = 30% markup)
-  PRICE_MARKUP: 1.3,
+  // Markup harga dari provider (2.0 = 100% markup, harga jual 2x harga provider)
+  PRICE_MARKUP: 2.0,
 
   REFERRAL_COMMISSION: 5,
 };

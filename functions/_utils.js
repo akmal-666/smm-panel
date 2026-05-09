@@ -105,3 +105,22 @@ export function randomString(len = 32) {
   const arr = crypto.getRandomValues(new Uint8Array(len));
   return Array.from(arr).map(b => chars[b % chars.length]).join('');
 }
+
+// ── Kurs USD → IDR real-time ──
+// Menggunakan frankfurter.app (gratis, tanpa API key)
+// Fallback ke nilai dari env atau hardcode jika fetch gagal
+export async function getUsdToIdr(env) {
+  const fallback = parseFloat(env?.USD_TO_IDR) || 16300;
+  try {
+    const res = await fetch('https://api.frankfurter.app/latest?from=USD&to=IDR', {
+      cf: { cacheTtl: 3600, cacheEverything: true }, // cache 1 jam di Cloudflare edge
+    });
+    if (!res.ok) return fallback;
+    const data = await res.json();
+    const rate = data?.rates?.IDR;
+    if (!rate || isNaN(rate)) return fallback;
+    return parseFloat(rate);
+  } catch {
+    return fallback;
+  }
+}

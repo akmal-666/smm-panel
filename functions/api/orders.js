@@ -8,10 +8,7 @@
  * - Kita simpan charge dalam IDR (sudah dikonversi + markup)
  * - Balance user juga dalam IDR
  */
-import { json, err, cors, requireAuth } from '../_utils.js';
-
-const USD_TO_IDR = 16300;
-const PRICE_MARKUP = 1.3;
+import { json, err, cors, requireAuth, getUsdToIdr } from '../_utils.js';
 
 export async function onRequestOptions() { return cors(); }
 
@@ -86,10 +83,11 @@ export async function onRequestPost(context) {
     // charge dari AsokaPanel dalam USD
     chargeUsd = parseFloat(provData.charge || 0);
 
-    // Konversi ke IDR + markup
-    const kurs = parseFloat(env.USD_TO_IDR) || USD_TO_IDR;
-    const markup = parseFloat(env.PRICE_MARKUP) || PRICE_MARKUP;
-    chargeIdr = Math.ceil(chargeUsd * kurs * markup / 100) * 100;
+    // Konversi ke IDR + markup (real-time kurs, fallback ke env/hardcode)
+    const kurs = await getUsdToIdr(env);
+    // markup dari env: 2.0 = 100% markup (harga jual 2x harga provider)
+    const markup = parseFloat(env.PRICE_MARKUP) || 2.0;
+    chargeIdr = Math.ceil(chargeUsd * kurs * markup) * 100;
 
   } catch (e) {
     return err('Gagal menghubungi provider: ' + e.message, 502);

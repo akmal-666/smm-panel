@@ -11,13 +11,10 @@
  *   - status    : cek status banyak order (param: orders = "1,2,3")
  *   - balance   : cek saldo di AsokaPanel
  */
-import { json, err, cors, requireAuth } from '../_utils.js';
+import { json, err, cors, requireAuth, getUsdToIdr } from '../_utils.js';
 
-// Kurs USD → IDR (update berkala atau ambil dari env)
-const USD_TO_IDR = 16300;
-
-// Markup harga dari provider (30%)
-const PRICE_MARKUP = 1.3;
+// Markup harga dari provider (2.0 = 100% markup, harga jual 2x harga provider)
+const PRICE_MARKUP = 2.0;
 
 export async function onRequestOptions() { return cors(); }
 
@@ -77,14 +74,15 @@ export async function onRequestPost(context) {
 
   // Untuk action "services": konversi harga USD → IDR + tambah markup
   if (action === 'services' && Array.isArray(data)) {
-    const kurs = parseFloat(env.USD_TO_IDR) || USD_TO_IDR;
+    const kurs = await getUsdToIdr(env);
     const markup = parseFloat(env.PRICE_MARKUP) || PRICE_MARKUP;
     data = data.map(s => ({
       ...s,
       // rate asli dari AsokaPanel dalam USD per 1000
       rate_usd: s.rate,
       // rate yang ditampilkan ke user: IDR per 1000 (sudah markup)
-      rate: Math.ceil(parseFloat(s.rate) * kurs * markup / 100) * 100, // bulatkan ke ratusan
+      // rate AsokaPanel = USD per 1000, jadi: rate * kurs * markup
+      rate: Math.ceil(parseFloat(s.rate) * kurs * markup) * 100,
     }));
   }
 
