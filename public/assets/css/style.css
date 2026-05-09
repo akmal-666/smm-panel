@@ -403,3 +403,12 @@ img { max-width: 100%; }
 .input-wrapper .input-icon { position: absolute; left: .875rem; color: var(--gray-400); font-size: .875rem; pointer-events: none; z-index: 1; }
 .input-wrapper input { width: 100%; padding: .75rem .875rem .75rem 2.5rem; border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); font-size: .9rem; color: var(--gray-800); transition: var(--transition); background: var(--gray-50); }
 .input-wrapper input:focus { outline: none; border-color: var(--primary); background: var(--white); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+
+/* ===== STAT PURPLE (Provider Balance) ===== */
+.stat-purple .stat-icon { background: #f3e8ff; color: #7c3aed; }
+.stat-purple .stat-action { color: #7c3aed; background: #f3e8ff; }
+.stat-purple .stat-action:hover { opacity: .8; }
+/* Grid 3 kolom saat admin card muncul */
+.stats-grid-3 { grid-template-columns: repeat(3, 1fr) !important; }
+@media (max-width: 1024px) { .stats-grid-3 { grid-template-columns: repeat(2, 1fr) !important; } }
+@media (max-width: 480px) { .stats-grid-3 { grid-template-columns: 1fr !important; } }

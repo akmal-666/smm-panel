@@ -96,6 +96,10 @@ async function initDashboard() {
   // Tampilkan menu admin jika role admin
   if (currentUser && currentUser.role === 'admin') {
     document.querySelectorAll('.nav-admin-only').forEach(el => el.classList.remove('hidden'));
+    // Grid jadi 3 kolom untuk admin
+    document.getElementById('stats-grid-main').classList.add('stats-grid-3');
+    // Fetch saldo provider
+    loadProviderBalance();
   }
   await loadServices();
   loadOrders();
@@ -980,6 +984,26 @@ async function deleteUser(id, name) {
     showToast('error', 'Error', e.message);
   } finally {
     showLoading(false);
+  }
+}
+
+// ── PROVIDER BALANCE ──
+async function loadProviderBalance() {
+  const el = document.getElementById('stat-provider-balance');
+  if (!el) return;
+  try {
+    const data = await API._fetch('/api/proxy', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'balance' }),
+    });
+    if (data.balance !== undefined) {
+      const usd = parseFloat(data.balance).toFixed(2);
+      el.textContent = '$' + usd;
+    } else {
+      el.textContent = 'Error';
+    }
+  } catch (e) {
+    el.textContent = 'Error';
   }
 }
 

@@ -171,7 +171,7 @@
         </div>
 
         <!-- Stats Cards -->
-        <div class="stats-grid">
+        <div class="stats-grid" id="stats-grid-main">
           <div class="stat-card stat-blue">
             <div class="stat-icon"><i class="fas fa-shopping-bag"></i></div>
             <div class="stat-body">
@@ -190,6 +190,19 @@
             </div>
             <a href="#" class="stat-action" onclick="navigateTo('my-orders', null)">
               Detail <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+          <!-- Hanya tampil untuk admin -->
+          <div class="stat-card stat-purple nav-admin-only hidden" id="stat-provider-card">
+            <div class="stat-icon"><i class="fas fa-cloud"></i></div>
+            <div class="stat-body">
+              <span class="stat-label">Saldo AsokaPanel</span>
+              <span class="stat-value" id="stat-provider-balance">
+                <i class="fas fa-spinner fa-spin" style="font-size:1rem"></i>
+              </span>
+            </div>
+            <a href="https://asokapanel.com" target="_blank" rel="noopener" class="stat-action">
+              Top Up di AsokaPanel <i class="fas fa-external-link-alt"></i>
             </a>
           </div>
         </div>
