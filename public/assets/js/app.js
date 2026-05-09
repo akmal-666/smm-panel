@@ -253,7 +253,17 @@ function onServiceChange() {
   document.getElementById('info-max').textContent = formatNumber(service.max);
   document.getElementById('info-rate').textContent = formatCurrency(service.rate) + '/1K';
   document.getElementById('service-info').classList.remove('hidden');
-  const qtyEl = document.getElementById('order-qty');
+
+  // Tampilkan harga provider jika tersedia
+  const providerRow = document.getElementById('info-provider-row');
+  if (service.rate_usd && providerRow) {
+    document.getElementById('info-rate-usd').textContent = '$' + parseFloat(service.rate_usd).toFixed(4) + '/1K';
+    document.getElementById('info-rate-idr-provider').textContent = '≈ ' + formatCurrency(service.rate_provider_idr) + '/1K';
+    document.getElementById('info-kurs').textContent = '(kurs $1 = Rp ' + (service.kurs_usd || 0).toLocaleString('id-ID') + ')';
+    providerRow.classList.remove('hidden');
+  } else if (providerRow) {
+    providerRow.classList.add('hidden');
+  }  const qtyEl = document.getElementById('order-qty');
   qtyEl.placeholder = 'Min: ' + service.min + ' - Max: ' + formatNumber(service.max);
   qtyEl.min = service.min;
   qtyEl.max = service.max;

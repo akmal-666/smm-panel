@@ -419,3 +419,10 @@ img { max-width: 100%; }
 .link-prefix { display: flex; align-items: center; padding: .75rem .75rem .75rem .875rem; background: var(--gray-100); color: var(--gray-500); font-size: .8rem; font-weight: 500; white-space: nowrap; border-right: 1.5px solid var(--gray-200); user-select: none; }
 .link-prefix.hidden { display: none; }
 .link-input-wrapper input { flex: 1; padding: .75rem .875rem; border: none; background: transparent; font-size: .9rem; color: var(--gray-800); outline: none; min-width: 0; }
+
+/* ===== SERVICE PROVIDER PRICE INFO ===== */
+.service-info-provider { display: flex; align-items: center; flex-wrap: wrap; gap: .375rem; margin-top: .625rem; padding: .5rem .75rem; background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius-sm); font-size: .8rem; color: var(--gray-600); }
+.service-info-provider i { color: var(--warning); }
+.service-info-provider strong { color: var(--gray-800); }
+.info-sep { color: var(--gray-300); }
+.info-kurs { color: var(--gray-400); font-size: .75rem; }

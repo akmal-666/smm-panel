@@ -66,15 +66,21 @@ export async function onRequestPost(context) {
 
     // Filter: hanya tampilkan service yang ada di localMap
     // Gunakan harga dari DB lokal (override), data lain dari provider
+    const kurs = await getUsdToIdr(env);
+
     const filtered = providerServices
       .filter(s => localMap[String(s.service)])
       .map(s => {
         const local = localMap[String(s.service)];
+        const rateUsd = parseFloat(s.rate) || 0;
         return {
           service: s.service,
-          name: local.name || s.name,          // nama bisa di-override admin
+          name: local.name || s.name,
           category: local.category || s.category,
-          rate: local.rate,                     // harga IDR dari admin
+          rate: local.rate,                          // harga jual IDR (set admin)
+          rate_usd: rateUsd,                         // harga asli provider USD/1K
+          rate_provider_idr: Math.ceil(rateUsd * kurs), // konversi IDR tanpa markup
+          kurs_usd: Math.round(kurs),                // kurs saat ini
           min: local.min_order || parseInt(s.min) || 10,
           max: local.max_order || parseInt(s.max) || 100000,
         };
