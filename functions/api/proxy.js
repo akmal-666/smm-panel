@@ -1,85 +1,61 @@
 /**
- * Cloudflare Pages Function - API Proxy
- * File: functions/api/proxy.js
- *
- * This proxies requests to your SMM provider API,
- * keeping your API key secret on the server side.
- *
- * Set these in Cloudflare Pages > Settings > Environment Variables:
- *   PROVIDER_API_URL  = https://justanotherpanel.com/api/v2
- *   PROVIDER_API_KEY  = your_api_key_here
+ * functions/api/proxy.js
+ * POST /api/proxy  - proxy to SMM provider + sync order status to D1
  */
+import { json, err, cors, requireAuth } from '../_utils.js';
+
+export async function onRequestOptions() { return cors(); }
 
 export async function onRequestPost(context) {
   const { request, env } = context;
 
-  const PROVIDER_URL = env.PROVIDER_API_URL || 'https://justanotherpanel.com/api/v2';
-  const PROVIDER_KEY = env.PROVIDER_API_KEY || '';
+  const PROVIDER_URL = env.PROVIDER_API_URL;
+  const PROVIDER_KEY = env.PROVIDER_API_KEY;
 
-  // CORS headers
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Content-Type': 'application/json',
-  };
+  if (!PROVIDER_URL || !PROVIDER_KEY) {
+    return err('Provider API not configured. Set PROVIDER_API_URL and PROVIDER_API_KEY in environment variables.', 503);
+  }
+
+  // Auth required for status/services actions
+  const payload = await requireAuth(request, env);
+  if (!payload) return err('Unauthorized', 401);
 
   try {
     const body = await request.json();
-    const { action, service, link, quantity, order, orders } = body;
+    const { action, order, orders } = body;
 
-    if (!action) {
-      return new Response(JSON.stringify({ error: 'Missing action' }), { status: 400, headers: corsHeaders });
-    }
+    if (!action) return err('Missing action');
 
-    // Build form data for provider API
     const formData = new URLSearchParams();
     formData.append('key', PROVIDER_KEY);
     formData.append('action', action);
 
-    if (action === 'add') {
-      if (!service || !link || !quantity) {
-        return new Response(JSON.stringify({ error: 'Missing required fields: service, link, quantity' }), { status: 400, headers: corsHeaders });
-      }
-      formData.append('service', service);
-      formData.append('link', link);
-      formData.append('quantity', quantity);
-    }
-
     if (action === 'status' && order) {
       formData.append('order', order);
     }
-
     if (action === 'status' && orders) {
       formData.append('orders', Array.isArray(orders) ? orders.join(',') : orders);
     }
 
-    // Call provider API
-    const providerRes = await fetch(PROVIDER_URL, {
+    const provRes = await fetch(PROVIDER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: formData.toString(),
     });
 
-    if (!providerRes.ok) {
-      return new Response(JSON.stringify({ error: 'Provider API error: ' + providerRes.status }), { status: 502, headers: corsHeaders });
+    if (!provRes.ok) return err('Provider error: ' + provRes.status, 502);
+    const data = await provRes.json();
+
+    // Sync order status back to D1
+    if (action === 'status' && order && data.status && env.DB) {
+      await env.DB.prepare(
+        `UPDATE orders SET status=?, start_count=?, remains=?, updated_at=datetime('now')
+         WHERE provider_order_id=? AND user_id=?`
+      ).bind(data.status, data.start_count || 0, data.remains || 0, String(order), payload.sub).run();
     }
 
-    const data = await providerRes.json();
-    return new Response(JSON.stringify(data), { status: 200, headers: corsHeaders });
-
-  } catch (err) {
-    return new Response(JSON.stringify({ error: 'Internal error: ' + err.message }), { status: 500, headers: corsHeaders });
+    return json(data);
+  } catch (e) {
+    return err('Internal error: ' + e.message, 500);
   }
-}
-
-export async function onRequestOptions() {
-  return new Response(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
-  });
 }

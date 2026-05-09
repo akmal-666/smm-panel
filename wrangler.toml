@@ -4,3 +4,12 @@ pages_build_output_dir = "./public"
 
 [vars]
 ENVIRONMENT = "production"
+
+# D1 Database binding
+# After creating D1 database, replace DATABASE_ID below:
+# Run: wrangler d1 create smm-panel-db
+# Then copy the database_id from output
+[[d1_databases]]
+binding = "DB"
+database_name = "smm-panel-db"
+database_id = "14ae6b4b-1be2-46c5-bccd-4bff1b426852"

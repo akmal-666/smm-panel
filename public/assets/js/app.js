@@ -106,6 +106,13 @@ function logout() {
 async function initDashboard() {
   updateUserUI();
   navigateTo('new-order', document.querySelector('.nav-item'));
+  // Refresh user from server in production
+  if (!CONFIG.DEMO_MODE) {
+    try {
+      currentUser = await API.refreshUser();
+    } catch(e) { /* use cached */ }
+  }
+  updateUserUI();
   await loadServices();
   loadOrders();
   loadTransactions();
@@ -335,7 +342,7 @@ async function placeOrder() {
   }
   showLoading(true);
   try {
-    const res = await API.placeOrder(serviceId, link, qty);
+    const res = await API.placeOrder(serviceId, link, qty, service ? service.name : '');
     if (res.order) {
       currentUser = API.getUser();
       updateBalanceUI();
@@ -462,36 +469,48 @@ function setAmount(amount) {
   document.getElementById('fund-amount').value = amount;
 }
 
-function addFunds() {
+async function addFunds() {
   const amount = parseFloat(document.getElementById('fund-amount').value);
   if (!amount || amount < CONFIG.MIN_DEPOSIT) return showToast('warning', 'Invalid Amount', 'Minimum deposit is $' + CONFIG.MIN_DEPOSIT);
-  if (CONFIG.DEMO_MODE) {
-    currentUser = API.updateUser({ balance: (currentUser.balance || 0) + amount });
-    API.addTransaction('credit', amount, 'Manual deposit');
-    updateBalanceUI();
-    loadTransactions();
-    document.getElementById('fund-amount').value = '';
-    showToast('success', 'Funds Added!', '$' + amount.toFixed(2) + ' added to your balance');
-  } else {
-    showToast('info', 'Redirecting...', 'You will be redirected to payment gateway');
+  showLoading(true);
+  try {
+    const res = await API.addFunds(amount);
+    if (res.success) {
+      if (!CONFIG.DEMO_MODE) currentUser = await API.refreshUser();
+      else currentUser = API.getUser();
+      updateBalanceUI();
+      loadTransactions();
+      document.getElementById('fund-amount').value = '';
+      showToast('success', 'Funds Added!', '$' + amount.toFixed(2) + ' added to your balance');
+    } else {
+      showToast('error', 'Failed', res.error || 'Could not add funds');
+    }
+  } catch(e) {
+    showToast('error', 'Error', e.message);
+  } finally {
+    showLoading(false);
   }
 }
 
-function loadTransactions() {
+async function loadTransactions() {
   const list = document.getElementById('transaction-list');
   if (!list) return;
-  const transactions = API.getTransactions();
-  if (!transactions.length) {
-    list.innerHTML = '<div class="empty-state"><i class="fas fa-receipt"></i><br/>No transactions yet</div>';
-    return;
+  try {
+    const transactions = await API.getTransactions();
+    if (!transactions.length) {
+      list.innerHTML = '<div class="empty-state"><i class="fas fa-receipt"></i><br/>No transactions yet</div>';
+      return;
+    }
+    list.innerHTML = transactions.map(t =>
+      '<div class="transaction-item">' +
+      '<div class="transaction-icon ' + t.type + '"><i class="fas fa-' + (t.type === 'credit' ? 'arrow-down' : 'arrow-up') + '"></i></div>' +
+      '<div class="transaction-info"><strong>' + escapeHtml(t.description) + '</strong><span>' + formatDate(t.date || t.created_at) + '</span></div>' +
+      '<span class="transaction-amount ' + t.type + '">' + (t.type === 'credit' ? '+' : '-') + '$' + parseFloat(t.amount).toFixed(2) + '</span>' +
+      '</div>'
+    ).join('');
+  } catch(e) {
+    list.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><br/>Failed to load transactions</div>';
   }
-  list.innerHTML = transactions.map(t =>
-    '<div class="transaction-item">' +
-    '<div class="transaction-icon ' + t.type + '"><i class="fas fa-' + (t.type === 'credit' ? 'arrow-down' : 'arrow-up') + '"></i></div>' +
-    '<div class="transaction-info"><strong>' + escapeHtml(t.description) + '</strong><span>' + formatDate(t.date) + '</span></div>' +
-    '<span class="transaction-amount ' + t.type + '">' + (t.type === 'credit' ? '+' : '-') + '$' + parseFloat(t.amount).toFixed(2) + '</span>' +
-    '</div>'
-  ).join('');
 }
 
 // REFERRAL
@@ -511,14 +530,27 @@ function copyReferral() {
 function showNewTicket() { document.getElementById('new-ticket-form').classList.remove('hidden'); }
 function hideNewTicket() { document.getElementById('new-ticket-form').classList.add('hidden'); }
 
-function submitTicket() {
+async function submitTicket() {
   const subject = document.getElementById('ticket-subject').value.trim();
+  const category = document.getElementById('ticket-category').value;
   const message = document.getElementById('ticket-message').value.trim();
   if (!subject || !message) return showToast('warning', 'Missing Fields', 'Please fill subject and message');
-  showToast('success', 'Ticket Submitted', 'Our team will respond within 24 hours');
-  hideNewTicket();
-  document.getElementById('ticket-subject').value = '';
-  document.getElementById('ticket-message').value = '';
+  showLoading(true);
+  try {
+    const res = await API.createTicket(subject, category, message);
+    if (res.success) {
+      showToast('success', 'Ticket Submitted', 'Our team will respond within 24 hours');
+      hideNewTicket();
+      document.getElementById('ticket-subject').value = '';
+      document.getElementById('ticket-message').value = '';
+    } else {
+      showToast('error', 'Failed', res.error || 'Could not submit ticket');
+    }
+  } catch(e) {
+    showToast('error', 'Error', e.message);
+  } finally {
+    showLoading(false);
+  }
 }
 
 // API DOCS
