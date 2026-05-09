@@ -1,11 +1,11 @@
 /**
  * functions/api/admin/services.js
- * Admin-only CRUD untuk tabel services (rate management)
+ * Admin-only CRUD untuk mengaktifkan/menonaktifkan service dari provider
  *
- * GET    /api/admin/services          - list semua services
- * POST   /api/admin/services          - tambah service baru
- * PUT    /api/admin/services          - update service (body: id + fields)
- * DELETE /api/admin/services?id=X     - hapus service
+ * GET    /api/admin/services          - list semua service dari provider + status lokal
+ * POST   /api/admin/services          - aktifkan service (simpan ke DB dengan custom rate)
+ * PUT    /api/admin/services          - update service yang sudah aktif
+ * DELETE /api/admin/services?id=X     - nonaktifkan/hapus service dari DB lokal
  */
 import { json, err, cors, requireAuth } from '../../_utils.js';
 
@@ -20,7 +20,7 @@ async function requireAdmin(request, env) {
   return payload;
 }
 
-// GET - list semua services
+// GET - list semua services dari DB lokal (yang sudah diaktifkan admin)
 export async function onRequestGet(context) {
   const { request, env } = context;
   const payload = await requireAdmin(request, env);
@@ -33,7 +33,7 @@ export async function onRequestGet(context) {
   return json({ success: true, services: result.results });
 }
 
-// POST - tambah service baru
+// POST - aktifkan service baru (tambah ke DB lokal)
 export async function onRequestPost(context) {
   const { request, env } = context;
   const payload = await requireAdmin(request, env);
@@ -63,15 +63,15 @@ export async function onRequestPost(context) {
     ).run();
   } catch (e) {
     if (e.message && e.message.includes('UNIQUE')) {
-      return err('Service ID ' + service_id + ' sudah ada');
+      return err('Service ID ' + service_id + ' sudah ada, gunakan PUT untuk update');
     }
     return err('Gagal menyimpan: ' + e.message, 500);
   }
 
-  return json({ success: true, message: 'Service berhasil ditambahkan' }, 201);
+  return json({ success: true, message: 'Service berhasil diaktifkan' }, 201);
 }
 
-// PUT - update service
+// PUT - update service yang sudah ada di DB lokal
 export async function onRequestPut(context) {
   const { request, env } = context;
   const payload = await requireAdmin(request, env);
@@ -118,7 +118,7 @@ export async function onRequestPut(context) {
   return json({ success: true, message: 'Service berhasil diupdate' });
 }
 
-// DELETE - hapus service
+// DELETE - hapus service dari DB lokal
 export async function onRequestDelete(context) {
   const { request, env } = context;
   const payload = await requireAdmin(request, env);

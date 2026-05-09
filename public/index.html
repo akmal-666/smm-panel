@@ -664,87 +664,16 @@
       <div id="page-admin-services" class="page">
         <div class="page-header">
           <h1>⚙️ Manage Services</h1>
-          <p>Tambah, edit, atau hapus layanan yang tersedia untuk user</p>
+          <p>Pilih service dari provider dan atur harga untuk ditampilkan ke user</p>
         </div>
 
-        <!-- Add / Edit Form -->
-        <div class="card" id="admin-service-form-card">
-          <div class="card-header">
-            <div class="card-icon"><i class="fas fa-plus-circle"></i></div>
-            <h3 id="admin-form-title">Tambah Service Baru</h3>
-          </div>
-          <div class="admin-form-grid">
-            <input type="hidden" id="admin-svc-db-id" value="" />
-            <div class="form-group">
-              <label>Service ID <span style="color:var(--gray-400);font-weight:400;text-transform:none">(dari provider, misal: 1001)</span></label>
-              <input type="text" id="admin-svc-id" placeholder="Contoh: 1001" />
-            </div>
-            <div class="form-group">
-              <label>Nama Service</label>
-              <input type="text" id="admin-svc-name" placeholder="Contoh: Instagram - Followers | Real | Instant" />
-            </div>
-            <div class="form-group">
-              <label>Kategori</label>
-              <input type="text" id="admin-svc-category" placeholder="Contoh: Instagram, TikTok, YouTube" list="category-suggestions" />
-              <datalist id="category-suggestions">
-                <option value="Instagram" />
-                <option value="TikTok" />
-                <option value="YouTube" />
-                <option value="Facebook" />
-                <option value="Twitter/X" />
-                <option value="Spotify" />
-                <option value="Telegram" />
-              </datalist>
-            </div>
-            <div class="form-group">
-              <label>Harga per 1000 (IDR)</label>
-              <div class="input-wrapper">
-                <i class="fas fa-money-bill-wave"></i>
-                <input type="number" id="admin-svc-rate" placeholder="Contoh: 40000" min="0" step="100" />
-              </div>
-              <div class="form-hint" id="admin-rate-preview"></div>
-            </div>
-            <div class="form-group">
-              <label>Min Order</label>
-              <input type="number" id="admin-svc-min" placeholder="10" min="1" value="10" />
-            </div>
-            <div class="form-group">
-              <label>Max Order</label>
-              <input type="number" id="admin-svc-max" placeholder="100000" min="1" value="100000" />
-            </div>
-            <div class="form-group">
-              <label>Status</label>
-              <div class="select-wrapper">
-                <select id="admin-svc-active">
-                  <option value="1">✅ Aktif (bisa diorder)</option>
-                  <option value="0">❌ Nonaktif (tidak bisa diorder)</option>
-                </select>
-                <i class="fas fa-chevron-down"></i>
-              </div>
-            </div>
-          </div>
-          <div class="form-row" style="margin-top:1rem">
-            <button class="btn-outline" onclick="resetAdminForm()">
-              <i class="fas fa-times"></i> Reset
-            </button>
-            <button class="btn-primary" onclick="saveAdminService()">
-              <i class="fas fa-save"></i> <span id="admin-save-btn-text">Simpan Service</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Services Table -->
-        <div class="card" style="margin-top:1.5rem">
+        <!-- Activated Services -->
+        <div class="card" style="margin-bottom:1.5rem">
           <div class="card-toolbar">
-            <h3><i class="fas fa-list" style="color:var(--primary)"></i> Daftar Services</h3>
+            <h3><i class="fas fa-check-circle" style="color:var(--success)"></i> Service Aktif</h3>
             <div class="search-box">
               <i class="fas fa-search"></i>
-              <input type="text" id="admin-services-search" placeholder="Cari service..." oninput="filterAdminServices()" />
-            </div>
-            <div class="filter-group">
-              <select id="admin-services-cat-filter" onchange="filterAdminServices()">
-                <option value="">Semua Kategori</option>
-              </select>
+              <input type="text" id="admin-active-search" placeholder="Cari service aktif..." oninput="filterAdminActive()" />
             </div>
             <button class="btn-outline" onclick="loadAdminServices()">
               <i class="fas fa-sync-alt"></i> Refresh
@@ -754,20 +683,121 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Service ID</th>
+                  <th>ID Provider</th>
                   <th>Nama</th>
                   <th>Kategori</th>
-                  <th>Harga/1K</th>
+                  <th>Harga/1K (IDR)</th>
                   <th>Min</th>
                   <th>Max</th>
                   <th>Status</th>
                   <th>Aksi</th>
                 </tr>
               </thead>
-              <tbody id="admin-services-tbody">
-                <tr><td colspan="8" class="empty-state"><i class="fas fa-spinner fa-spin"></i><br/>Loading...</td></tr>
+              <tbody id="admin-active-tbody">
+                <tr><td colspan="8" class="empty-state"><i class="fas fa-inbox"></i><br/>Belum ada service aktif</td></tr>
               </tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- All Provider Services -->
+        <div class="card">
+          <div class="card-toolbar">
+            <h3><i class="fas fa-cloud-download-alt" style="color:var(--primary)"></i> Semua Service dari Provider</h3>
+            <div class="search-box">
+              <i class="fas fa-search"></i>
+              <input type="text" id="admin-provider-search" placeholder="Cari service provider..." oninput="filterAdminProvider()" />
+            </div>
+            <div class="filter-group">
+              <select id="admin-provider-cat" onchange="filterAdminProvider()">
+                <option value="">Semua Kategori</option>
+              </select>
+            </div>
+            <button class="btn-outline" onclick="loadProviderServices()">
+              <i class="fas fa-sync-alt"></i> Fetch dari Provider
+            </button>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nama Service</th>
+                  <th>Kategori</th>
+                  <th>Harga Provider</th>
+                  <th>Status</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="admin-provider-tbody">
+                <tr><td colspan="6" class="empty-state"><i class="fas fa-cloud"></i><br/>Klik "Fetch dari Provider" untuk memuat</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: Aktifkan / Edit Service -->
+      <div id="admin-service-modal" class="modal-overlay hidden" onclick="closeServiceModal(event)">
+        <div class="modal-card" onclick="event.stopPropagation()">
+          <div class="modal-header">
+            <h3 id="modal-title">Aktifkan Service</h3>
+            <button onclick="closeServiceModal()" class="modal-close"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="modal-db-id" />
+            <input type="hidden" id="modal-service-id" />
+            <div class="form-group">
+              <label>Service ID (Provider)</label>
+              <input type="text" id="modal-svc-id-display" readonly style="background:var(--gray-100);color:var(--gray-500)" />
+            </div>
+            <div class="form-group">
+              <label>Nama Service <span style="color:var(--gray-400);font-weight:400;text-transform:none">(bisa diubah)</span></label>
+              <input type="text" id="modal-svc-name" placeholder="Nama yang ditampilkan ke user" />
+            </div>
+            <div class="form-group">
+              <label>Kategori</label>
+              <input type="text" id="modal-svc-category" list="modal-category-suggestions" />
+              <datalist id="modal-category-suggestions">
+                <option value="Instagram" /><option value="TikTok" /><option value="YouTube" />
+                <option value="Facebook" /><option value="Twitter/X" /><option value="Spotify" />
+                <option value="Telegram" />
+              </datalist>
+            </div>
+            <div class="form-group">
+              <label>Harga per 1000 (IDR)</label>
+              <div class="input-wrapper">
+                <i class="fas fa-money-bill-wave"></i>
+                <input type="number" id="modal-svc-rate" placeholder="Contoh: 40000" min="0" step="100" oninput="updateModalPreview()" />
+              </div>
+              <div class="form-hint" id="modal-rate-preview" style="color:var(--primary);font-weight:500"></div>
+            </div>
+            <div class="admin-form-grid">
+              <div class="form-group">
+                <label>Min Order</label>
+                <input type="number" id="modal-svc-min" min="1" value="10" />
+              </div>
+              <div class="form-group">
+                <label>Max Order</label>
+                <input type="number" id="modal-svc-max" min="1" value="100000" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Status</label>
+              <div class="select-wrapper">
+                <select id="modal-svc-active">
+                  <option value="1">✅ Aktif — bisa diorder user</option>
+                  <option value="0">❌ Nonaktif — tidak tampil ke user</option>
+                </select>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-outline" onclick="closeServiceModal()">Batal</button>
+            <button class="btn-primary" onclick="saveServiceModal()">
+              <i class="fas fa-save"></i> <span id="modal-save-text">Aktifkan Service</span>
+            </button>
           </div>
         </div>
       </div>

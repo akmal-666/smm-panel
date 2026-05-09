@@ -97,10 +97,10 @@ export async function onRequestPost(context) {
     // charge dari AsokaPanel dalam USD
     chargeUsd = parseFloat(provData.charge || 0);
 
-    // Harga ke user diambil dari tabel lokal (rate dalam IDR, sudah di-set admin)
-    // Bukan dari charge provider — admin yang kontrol harga
+    // Harga ke user: rate IDR per 1000 dari tabel lokal × qty / 1000
+    // Bulatkan ke kelipatan 100
     const qty = parseInt(quantity);
-    chargeIdr = Math.ceil(localService.rate * qty / 1000 / 100) * 100;
+    chargeIdr = Math.ceil((localService.rate * qty / 1000) / 100) * 100;
 
   } catch (e) {
     return err('Gagal menghubungi provider: ' + e.message, 502);

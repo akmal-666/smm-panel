@@ -2,19 +2,14 @@
  * functions/api/proxy.js
  * POST /api/proxy  - proxy ke AsokaPanel API + sync status order ke D1
  *
- * AsokaPanel API: https://asokapanel.com/api/v2
- * Docs: https://asokapanel.com/api
- *
  * Actions yang didukung:
- *   - services  : ambil daftar layanan
- *   - status    : cek status 1 order (param: order)
- *   - status    : cek status banyak order (param: orders = "1,2,3")
- *   - balance   : cek saldo di AsokaPanel
+ *   - services        : ambil semua service dari provider, merge dengan setting lokal
+ *   - services_all    : (admin only) ambil semua service dari provider tanpa filter
+ *   - status          : cek status 1 order (param: order)
+ *   - status          : cek status banyak order (param: orders = "1,2,3")
+ *   - balance         : cek saldo di AsokaPanel
  */
 import { json, err, cors, requireAuth, getUsdToIdr } from '../_utils.js';
-
-// Markup harga dari provider (2.0 = 100% markup, harga jual 2x harga provider)
-const PRICE_MARKUP = 2.0;
 
 export async function onRequestOptions() { return cors(); }
 
@@ -28,7 +23,6 @@ export async function onRequestPost(context) {
     return err('Provider API belum dikonfigurasi. Set PROVIDER_API_KEY di environment variables Cloudflare Pages.', 503);
   }
 
-  // Semua action butuh auth
   const payload = await requireAuth(request, env);
   if (!payload) return err('Unauthorized', 401);
 
@@ -42,6 +36,111 @@ export async function onRequestPost(context) {
   const { action, order, orders } = body;
   if (!action) return err('Missing action');
 
+  // ── services: ambil dari provider, filter hanya yang diaktifkan admin ──
+  if (action === 'services') {
+    const formData = new URLSearchParams();
+    formData.append('key', PROVIDER_KEY);
+    formData.append('action', 'services');
+
+    let providerServices = [];
+    try {
+      const provRes = await fetch(PROVIDER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData.toString(),
+      });
+      const raw = await provRes.json();
+      providerServices = Array.isArray(raw) ? raw : [];
+    } catch (e) {
+      return err('Gagal mengambil services dari provider: ' + e.message, 502);
+    }
+
+    // Ambil semua service yang diaktifkan admin dari DB lokal
+    const localResult = await env.DB.prepare(
+      'SELECT * FROM services WHERE is_active=1'
+    ).all();
+    const localMap = {};
+    for (const s of (localResult.results || [])) {
+      localMap[String(s.service_id)] = s;
+    }
+
+    // Filter: hanya tampilkan service yang ada di localMap
+    // Gunakan harga dari DB lokal (override), data lain dari provider
+    const filtered = providerServices
+      .filter(s => localMap[String(s.service)])
+      .map(s => {
+        const local = localMap[String(s.service)];
+        return {
+          service: s.service,
+          name: local.name || s.name,          // nama bisa di-override admin
+          category: local.category || s.category,
+          rate: local.rate,                     // harga IDR dari admin
+          min: local.min_order || parseInt(s.min) || 10,
+          max: local.max_order || parseInt(s.max) || 100000,
+        };
+      });
+
+    return json(filtered);
+  }
+
+  // ── services_all: untuk admin — semua service dari provider + status lokal ──
+  if (action === 'services_all') {
+    // Cek admin
+    const user = await env.DB.prepare('SELECT role FROM users WHERE id=?').bind(payload.sub).first();
+    if (!user || user.role !== 'admin') return err('Forbidden', 403);
+
+    const formData = new URLSearchParams();
+    formData.append('key', PROVIDER_KEY);
+    formData.append('action', 'services');
+
+    let providerServices = [];
+    try {
+      const provRes = await fetch(PROVIDER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData.toString(),
+      });
+      const raw = await provRes.json();
+      providerServices = Array.isArray(raw) ? raw : [];
+    } catch (e) {
+      return err('Gagal mengambil services dari provider: ' + e.message, 502);
+    }
+
+    // Ambil semua setting lokal (aktif maupun tidak)
+    const localResult = await env.DB.prepare('SELECT * FROM services').all();
+    const localMap = {};
+    for (const s of (localResult.results || [])) {
+      localMap[String(s.service_id)] = s;
+    }
+
+    // Merge: provider data + local override info
+    const kurs = await getUsdToIdr(env);
+    const markup = parseFloat(env.PRICE_MARKUP) || 2.0;
+
+    const merged = providerServices.map(s => {
+      const local = localMap[String(s.service)];
+      const defaultRate = Math.ceil(parseFloat(s.rate) * kurs * markup) * 100;
+      return {
+        service: s.service,
+        name: s.name,
+        category: s.category,
+        rate_provider_usd: s.rate,
+        rate_default_idr: defaultRate,
+        // Data dari DB lokal (jika sudah diaktifkan)
+        db_id: local ? local.id : null,
+        custom_name: local ? local.name : null,
+        custom_category: local ? local.category : null,
+        custom_rate: local ? local.rate : null,
+        min_order: local ? local.min_order : (parseInt(s.min) || 10),
+        max_order: local ? local.max_order : (parseInt(s.max) || 100000),
+        is_active: local ? local.is_active : 0,
+      };
+    });
+
+    return json(merged);
+  }
+
+  // ── Untuk action lain (status, balance): forward ke provider ──
   const formData = new URLSearchParams();
   formData.append('key', PROVIDER_KEY);
   formData.append('action', action);
@@ -60,36 +159,14 @@ export async function onRequestPost(context) {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: formData.toString(),
     });
-
     if (!provRes.ok) return err('Provider error: HTTP ' + provRes.status, 502);
     data = await provRes.json();
   } catch (e) {
     return err('Gagal menghubungi provider: ' + e.message, 502);
   }
 
-  // Jika error dari AsokaPanel
   if (data && data.error) {
     return err('Provider: ' + data.error, 422);
-  }
-
-  // Untuk action "services": ambil dari tabel lokal (bukan langsung dari provider)
-  // Hanya service yang is_active=1 yang ditampilkan
-  if (action === 'services') {
-    const result = await env.DB.prepare(
-      'SELECT * FROM services WHERE is_active=1 ORDER BY category ASC, name ASC'
-    ).all();
-    const localServices = result.results || [];
-    // Format agar kompatibel dengan frontend
-    const formatted = localServices.map(s => ({
-      service: s.service_id,
-      name: s.name,
-      category: s.category,
-      rate: s.rate,        // sudah dalam IDR, admin yang set
-      rate_idr: s.rate,
-      min: s.min_order,
-      max: s.max_order,
-    }));
-    return json(formatted);
   }
 
   // Sync status order ke D1

@@ -646,62 +646,48 @@ window.loadServicesByCategory = loadServicesByCategory;
 window.onServiceChange = onServiceChange;
 
 // ── ADMIN: MANAGE SERVICES ──
-let allAdminServices = [];
+let allAdminServices = [];   // service aktif di DB lokal
+let allProviderServices = []; // semua service dari provider
 
 async function loadAdminServices() {
-  const tbody = document.getElementById('admin-services-tbody');
+  const tbody = document.getElementById('admin-active-tbody');
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="fas fa-spinner fa-spin"></i><br/>Loading...</td></tr>';
   try {
     const res = await API.adminGetServices();
     if (!res.success) throw new Error(res.error || 'Gagal load');
     allAdminServices = res.services || [];
-    renderAdminServicesTable();
-    populateAdminCategoryFilter();
+    renderAdminActiveTable();
   } catch (e) {
     tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="fas fa-exclamation-circle"></i><br/>' + escapeHtml(e.message) + '</td></tr>';
   }
 }
 
-function populateAdminCategoryFilter() {
-  const sel = document.getElementById('admin-services-cat-filter');
-  if (!sel) return;
-  const cats = [...new Set(allAdminServices.map(s => s.category))].sort();
-  sel.innerHTML = '<option value="">Semua Kategori</option>';
-  cats.forEach(c => {
-    const o = document.createElement('option');
-    o.value = c; o.textContent = c;
-    sel.appendChild(o);
-  });
-}
-
-function renderAdminServicesTable() {
-  const search = (document.getElementById('admin-services-search')?.value || '').toLowerCase();
-  const cat = document.getElementById('admin-services-cat-filter')?.value || '';
+function renderAdminActiveTable() {
+  const search = (document.getElementById('admin-active-search')?.value || '').toLowerCase();
   let list = allAdminServices;
   if (search) list = list.filter(s => s.name.toLowerCase().includes(search) || String(s.service_id).includes(search));
-  if (cat) list = list.filter(s => s.category === cat);
-  const tbody = document.getElementById('admin-services-tbody');
+  const tbody = document.getElementById('admin-active-tbody');
   if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="fas fa-inbox"></i><br/>Belum ada service. Tambahkan di atas.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="fas fa-inbox"></i><br/>Belum ada service aktif. Aktifkan dari tabel provider di bawah.</td></tr>';
     return;
   }
   tbody.innerHTML = list.map(s => {
     const activeClass = s.is_active ? 'status-completed' : 'status-cancelled';
     const activeLabel = s.is_active ? '✅ Aktif' : '❌ Nonaktif';
     return '<tr>' +
-      '<td><strong>' + escapeHtml(s.service_id) + '</strong></td>' +
-      '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + escapeHtml(s.name) + '">' + escapeHtml(s.name) + '</td>' +
+      '<td><strong>' + escapeHtml(String(s.service_id)) + '</strong></td>' +
+      '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + escapeHtml(s.name) + '">' + escapeHtml(s.name) + '</td>' +
       '<td><span class="status-badge status-processing">' + escapeHtml(s.category) + '</span></td>' +
       '<td><strong>' + formatCurrency(s.rate) + '</strong></td>' +
       '<td>' + formatNumber(s.min_order) + '</td>' +
       '<td>' + formatNumber(s.max_order) + '</td>' +
       '<td><span class="status-badge ' + activeClass + '">' + activeLabel + '</span></td>' +
       '<td style="white-space:nowrap">' +
-        '<button class="btn-outline" style="padding:.3rem .7rem;font-size:.75rem;margin-right:.375rem" onclick="editAdminService(' + s.id + ')">' +
+        '<button class="btn-warning" style="margin-right:.375rem" onclick="openEditModal(' + s.id + ')">' +
           '<i class="fas fa-edit"></i> Edit' +
         '</button>' +
-        '<button class="btn-outline" style="padding:.3rem .7rem;font-size:.75rem;color:var(--danger);border-color:var(--danger)" onclick="deleteAdminService(' + s.id + ', \'' + escapeHtml(s.name) + '\')">' +
+        '<button class="btn-outline" style="padding:.3rem .7rem;font-size:.75rem;color:var(--danger);border-color:var(--danger)" onclick="deleteAdminService(' + s.id + ', \'' + escapeHtml(s.name).replace(/'/g, "\\'") + '\')">' +
           '<i class="fas fa-trash"></i>' +
         '</button>' +
       '</td>' +
@@ -709,71 +695,140 @@ function renderAdminServicesTable() {
   }).join('');
 }
 
-function filterAdminServices() { renderAdminServicesTable(); }
+function filterAdminActive() { renderAdminActiveTable(); }
 
-function editAdminService(id) {
-  const s = allAdminServices.find(x => x.id === id);
-  if (!s) return;
-  document.getElementById('admin-svc-db-id').value = s.id;
-  document.getElementById('admin-svc-id').value = s.service_id;
-  document.getElementById('admin-svc-name').value = s.name;
-  document.getElementById('admin-svc-category').value = s.category;
-  document.getElementById('admin-svc-rate').value = s.rate;
-  document.getElementById('admin-svc-min').value = s.min_order;
-  document.getElementById('admin-svc-max').value = s.max_order;
-  document.getElementById('admin-svc-active').value = s.is_active ? '1' : '0';
-  document.getElementById('admin-form-title').textContent = 'Edit Service: ' + s.name;
-  document.getElementById('admin-save-btn-text').textContent = 'Update Service';
-  updateRatePreview();
-  document.getElementById('admin-service-form-card').scrollIntoView({ behavior: 'smooth' });
-}
-
-function resetAdminForm() {
-  document.getElementById('admin-svc-db-id').value = '';
-  document.getElementById('admin-svc-id').value = '';
-  document.getElementById('admin-svc-name').value = '';
-  document.getElementById('admin-svc-category').value = '';
-  document.getElementById('admin-svc-rate').value = '';
-  document.getElementById('admin-svc-min').value = '10';
-  document.getElementById('admin-svc-max').value = '100000';
-  document.getElementById('admin-svc-active').value = '1';
-  document.getElementById('admin-form-title').textContent = 'Tambah Service Baru';
-  document.getElementById('admin-save-btn-text').textContent = 'Simpan Service';
-  document.getElementById('admin-rate-preview').textContent = '';
-}
-
-function updateRatePreview() {
-  const rate = parseFloat(document.getElementById('admin-svc-rate')?.value) || 0;
-  const preview = document.getElementById('admin-rate-preview');
-  if (!preview) return;
-  if (rate > 0) {
-    preview.textContent = 'Contoh: 1000 unit = ' + formatCurrency(rate);
-  } else {
-    preview.textContent = '';
+async function loadProviderServices() {
+  const tbody = document.getElementById('admin-provider-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><i class="fas fa-spinner fa-spin"></i><br/>Mengambil data dari provider...</td></tr>';
+  try {
+    const data = await API._fetch('/api/proxy', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'services_all' }),
+    });
+    if (data.error) throw new Error(data.error);
+    allProviderServices = Array.isArray(data) ? data : [];
+    renderProviderTable();
+    populateProviderCatFilter();
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><i class="fas fa-exclamation-circle"></i><br/>' + escapeHtml(e.message) + '</td></tr>';
   }
 }
 
-// Pasang event listener untuk preview rate
-document.addEventListener('DOMContentLoaded', () => {
-  const rateInput = document.getElementById('admin-svc-rate');
-  if (rateInput) rateInput.addEventListener('input', updateRatePreview);
-});
+function populateProviderCatFilter() {
+  const sel = document.getElementById('admin-provider-cat');
+  if (!sel) return;
+  const cats = [...new Set(allProviderServices.map(s => s.category))].sort();
+  sel.innerHTML = '<option value="">Semua Kategori</option>';
+  cats.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; sel.appendChild(o); });
+}
 
-async function saveAdminService() {
-  const dbId = document.getElementById('admin-svc-db-id').value;
-  const service_id = document.getElementById('admin-svc-id').value.trim();
-  const name = document.getElementById('admin-svc-name').value.trim();
-  const category = document.getElementById('admin-svc-category').value.trim();
-  const rate = parseFloat(document.getElementById('admin-svc-rate').value);
-  const min_order = parseInt(document.getElementById('admin-svc-min').value) || 10;
-  const max_order = parseInt(document.getElementById('admin-svc-max').value) || 100000;
-  const is_active = document.getElementById('admin-svc-active').value === '1';
+function renderProviderTable() {
+  const search = (document.getElementById('admin-provider-search')?.value || '').toLowerCase();
+  const cat = document.getElementById('admin-provider-cat')?.value || '';
+  let list = allProviderServices;
+  if (search) list = list.filter(s => s.name.toLowerCase().includes(search) || String(s.service).includes(search));
+  if (cat) list = list.filter(s => s.category === cat);
+  const tbody = document.getElementById('admin-provider-tbody');
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><i class="fas fa-search"></i><br/>Tidak ada service ditemukan</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(s => {
+    const isActive = s.is_active === 1;
+    const statusBadge = isActive
+      ? '<span class="status-badge status-completed">✅ Aktif</span>'
+      : '<span class="status-badge status-cancelled">❌ Belum aktif</span>';
+    const actionBtn = isActive
+      ? '<button class="btn-warning" onclick="openEditModalFromProvider(\'' + s.service + '\')">' +
+          '<i class="fas fa-edit"></i> Edit' +
+        '</button>'
+      : '<button class="btn-success" onclick="openActivateModal(\'' + s.service + '\')">' +
+          '<i class="fas fa-plus"></i> Aktifkan' +
+        '</button>';
+    return '<tr>' +
+      '<td><strong>' + escapeHtml(String(s.service)) + '</strong></td>' +
+      '<td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + escapeHtml(s.name) + '">' + escapeHtml(s.name) + '</td>' +
+      '<td><span class="status-badge status-processing">' + escapeHtml(s.category) + '</span></td>' +
+      '<td>' + formatCurrency(s.rate_default_idr || 0) + '<br/><small style="color:var(--gray-400)">$' + parseFloat(s.rate_provider_usd || 0).toFixed(4) + '/1K</small></td>' +
+      '<td>' + statusBadge + '</td>' +
+      '<td>' + actionBtn + '</td>' +
+      '</tr>';
+  }).join('');
+}
 
-  if (!service_id) return showToast('warning', 'Validasi', 'Service ID wajib diisi');
+function filterAdminProvider() { renderProviderTable(); }
+
+// Buka modal untuk aktifkan service baru dari provider
+function openActivateModal(serviceId) {
+  const s = allProviderServices.find(x => String(x.service) === String(serviceId));
+  if (!s) return;
+  document.getElementById('modal-db-id').value = '';
+  document.getElementById('modal-service-id').value = s.service;
+  document.getElementById('modal-svc-id-display').value = s.service;
+  document.getElementById('modal-svc-name').value = s.name;
+  document.getElementById('modal-svc-category').value = s.category;
+  document.getElementById('modal-svc-rate').value = s.rate_default_idr || '';
+  document.getElementById('modal-svc-min').value = s.min_order || 10;
+  document.getElementById('modal-svc-max').value = s.max_order || 100000;
+  document.getElementById('modal-svc-active').value = '1';
+  document.getElementById('modal-title').textContent = 'Aktifkan Service #' + s.service;
+  document.getElementById('modal-save-text').textContent = 'Aktifkan Service';
+  updateModalPreview();
+  document.getElementById('admin-service-modal').classList.remove('hidden');
+}
+
+// Buka modal edit dari tabel provider (service sudah aktif)
+function openEditModalFromProvider(serviceId) {
+  const s = allProviderServices.find(x => String(x.service) === String(serviceId));
+  if (!s || !s.db_id) return;
+  openEditModal(s.db_id);
+}
+
+// Buka modal edit dari tabel aktif
+function openEditModal(dbId) {
+  const s = allAdminServices.find(x => x.id === dbId);
+  if (!s) return;
+  document.getElementById('modal-db-id').value = s.id;
+  document.getElementById('modal-service-id').value = s.service_id;
+  document.getElementById('modal-svc-id-display').value = s.service_id;
+  document.getElementById('modal-svc-name').value = s.name;
+  document.getElementById('modal-svc-category').value = s.category;
+  document.getElementById('modal-svc-rate').value = s.rate;
+  document.getElementById('modal-svc-min').value = s.min_order;
+  document.getElementById('modal-svc-max').value = s.max_order;
+  document.getElementById('modal-svc-active').value = s.is_active ? '1' : '0';
+  document.getElementById('modal-title').textContent = 'Edit Service #' + s.service_id;
+  document.getElementById('modal-save-text').textContent = 'Simpan Perubahan';
+  updateModalPreview();
+  document.getElementById('admin-service-modal').classList.remove('hidden');
+}
+
+function closeServiceModal(e) {
+  if (e && e.target !== document.getElementById('admin-service-modal')) return;
+  document.getElementById('admin-service-modal').classList.add('hidden');
+}
+
+function updateModalPreview() {
+  const rate = parseFloat(document.getElementById('modal-svc-rate')?.value) || 0;
+  const preview = document.getElementById('modal-rate-preview');
+  if (!preview) return;
+  preview.textContent = rate > 0 ? '→ 1000 unit = ' + formatCurrency(rate) : '';
+}
+
+async function saveServiceModal() {
+  const dbId = document.getElementById('modal-db-id').value;
+  const service_id = document.getElementById('modal-service-id').value;
+  const name = document.getElementById('modal-svc-name').value.trim();
+  const category = document.getElementById('modal-svc-category').value.trim();
+  const rate = parseFloat(document.getElementById('modal-svc-rate').value);
+  const min_order = parseInt(document.getElementById('modal-svc-min').value) || 10;
+  const max_order = parseInt(document.getElementById('modal-svc-max').value) || 100000;
+  const is_active = document.getElementById('modal-svc-active').value === '1';
+
   if (!name) return showToast('warning', 'Validasi', 'Nama service wajib diisi');
   if (!category) return showToast('warning', 'Validasi', 'Kategori wajib diisi');
   if (isNaN(rate) || rate < 0) return showToast('warning', 'Validasi', 'Harga tidak valid');
-  if (min_order < 1) return showToast('warning', 'Validasi', 'Min order minimal 1');
   if (max_order < min_order) return showToast('warning', 'Validasi', 'Max order harus lebih besar dari min');
 
   showLoading(true);
@@ -785,11 +840,12 @@ async function saveAdminService() {
       res = await API.adminAddService({ service_id, name, category, rate, min_order, max_order, is_active });
     }
     if (res.success) {
-      showToast('success', 'Berhasil!', res.message || 'Service disimpan');
-      resetAdminForm();
+      showToast('success', 'Berhasil!', res.message);
+      document.getElementById('admin-service-modal').classList.add('hidden');
       await loadAdminServices();
-      // Reload services untuk user juga
-      await loadServices();
+      await loadServices(); // reload untuk user juga
+      // Update provider table status jika sudah di-load
+      if (allProviderServices.length) await loadProviderServices();
     } else {
       showToast('error', 'Gagal', res.error || 'Terjadi kesalahan');
     }
@@ -801,7 +857,7 @@ async function saveAdminService() {
 }
 
 async function deleteAdminService(id, name) {
-  if (!confirm('Hapus service "' + name + '"?\n\nService yang dihapus tidak bisa diorder oleh user.')) return;
+  if (!confirm('Hapus service "' + name + '"?\n\nService ini tidak akan bisa diorder oleh user.')) return;
   showLoading(true);
   try {
     const res = await API.adminDeleteService(id);
@@ -809,6 +865,7 @@ async function deleteAdminService(id, name) {
       showToast('success', 'Dihapus', '"' + name + '" berhasil dihapus');
       await loadAdminServices();
       await loadServices();
+      if (allProviderServices.length) await loadProviderServices();
     } else {
       showToast('error', 'Gagal', res.error || 'Tidak bisa menghapus');
     }
