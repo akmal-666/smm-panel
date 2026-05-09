@@ -209,4 +209,27 @@ const API = {
   async adminDeleteService(id) {
     return this._fetch('/api/admin/services?id=' + id, { method: 'DELETE' });
   },
+
+  // ── ADMIN: USERS CRUD ──
+  async adminGetUsers() {
+    return this._fetch('/api/admin/users');
+  },
+
+  async adminCreateUser(data) {
+    return this._fetch('/api/admin/users', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async adminUpdateUser(data) {
+    return this._fetch('/api/admin/users', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async adminDeleteUser(id) {
+    return this._fetch('/api/admin/users?id=' + id, { method: 'DELETE' });
+  },
 };

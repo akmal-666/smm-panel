@@ -27,80 +27,29 @@
           <span class="logo-text">Bronet<strong>SMM</strong></span>
         </div>
         <h2>Welcome back 👋</h2>
-        <p class="auth-subtitle">Sign in to your account to continue</p>
+        <p class="auth-subtitle">Masuk ke akun kamu untuk melanjutkan</p>
         <form id="login-form" class="auth-form">
           <div class="form-group">
-            <label>Email Address</label>
+            <label>Email</label>
             <div class="input-wrapper">
-              <i class="fas fa-envelope"></i>
+              <i class="fas fa-envelope input-icon"></i>
               <input type="email" id="login-email" placeholder="you@example.com" required />
             </div>
           </div>
           <div class="form-group">
             <label>Password</label>
             <div class="input-wrapper">
-              <i class="fas fa-lock"></i>
+              <i class="fas fa-lock input-icon"></i>
               <input type="password" id="login-password" placeholder="••••••••" required />
               <button type="button" class="toggle-pass" onclick="togglePassword('login-password')">
                 <i class="fas fa-eye"></i>
               </button>
             </div>
           </div>
-          <div class="form-row">
-            <label class="checkbox-label">
-              <input type="checkbox" /> Remember me
-            </label>
-            <a href="#" class="forgot-link">Forgot password?</a>
-          </div>
-          <button type="submit" class="btn-primary btn-full">Sign In</button>
+          <button type="submit" class="btn-primary btn-full" style="margin-top:.5rem">
+            <i class="fas fa-sign-in-alt"></i> Masuk
+          </button>
         </form>
-        <p class="auth-switch">Don't have an account? <a href="#" onclick="showPage('register-page')">Sign up</a></p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Register Page -->
-  <div id="register-page" class="auth-page">
-    <div class="auth-bg">
-      <div class="auth-blob blob-1"></div>
-      <div class="auth-blob blob-2"></div>
-    </div>
-    <div class="auth-container">
-      <div class="auth-card">
-        <div class="auth-logo">
-          <div class="logo-icon"><i class="fas fa-chart-line"></i></div>
-          <span class="logo-text">Bronet<strong>SMM</strong></span>
-        </div>
-        <h2>Create Account 🚀</h2>
-        <p class="auth-subtitle">Start growing your social media today</p>
-        <form id="register-form" class="auth-form">
-          <div class="form-group">
-            <label>Full Name</label>
-            <div class="input-wrapper">
-              <i class="fas fa-user"></i>
-              <input type="text" id="reg-name" placeholder="John Doe" required />
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Email Address</label>
-            <div class="input-wrapper">
-              <i class="fas fa-envelope"></i>
-              <input type="email" id="reg-email" placeholder="you@example.com" required />
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Password</label>
-            <div class="input-wrapper">
-              <i class="fas fa-lock"></i>
-              <input type="password" id="reg-password" placeholder="Min. 8 characters" required />
-              <button type="button" class="toggle-pass" onclick="togglePassword('reg-password')">
-                <i class="fas fa-eye"></i>
-              </button>
-            </div>
-          </div>
-          <button type="submit" class="btn-primary btn-full">Create Account</button>
-        </form>
-        <p class="auth-switch">Already have an account? <a href="#" onclick="showPage('login-page')">Sign in</a></p>
       </div>
     </div>
   </div>
@@ -144,14 +93,6 @@
         <div class="nav-icon"><i class="fas fa-th-large"></i></div>
         <span>Services</span>
       </a>
-      <a href="#" class="nav-item" onclick="navigateTo('add-funds', this)">
-        <div class="nav-icon"><i class="fas fa-wallet"></i></div>
-        <span>Add Funds</span>
-      </a>
-      <a href="#" class="nav-item" onclick="navigateTo('referral', this)">
-        <div class="nav-icon"><i class="fas fa-user-plus"></i></div>
-        <span>Referral</span>
-      </a>
       <a href="#" class="nav-item" onclick="navigateTo('tickets', this)">
         <div class="nav-icon"><i class="fas fa-ticket-alt"></i></div>
         <span>Tickets</span>
@@ -161,6 +102,11 @@
         <div class="nav-icon"><i class="fas fa-cogs"></i></div>
         <span>Manage Services</span>
       </a>
+      <a href="#" class="nav-item nav-admin-only hidden" onclick="navigateTo('admin-users', this)">
+        <div class="nav-icon"><i class="fas fa-users-cog"></i></div>
+        <span>Manage Users</span>
+      </a>
+      <div class="nav-divider"></div>
       <a href="#" class="nav-item" onclick="navigateTo('api-docs', this)">
         <div class="nav-icon"><i class="fas fa-code"></i></div>
         <span>API</span>
@@ -202,20 +148,15 @@
         </div>
       </div>
       <div class="topbar-right">
-        <button class="topbar-btn" onclick="navigateTo('add-funds', null)">
-          <i class="fas fa-plus"></i>
-          <span>Add Funds</span>
-        </button>
         <div class="topbar-balance">
           <i class="fas fa-wallet"></i>
-          <span id="topbar-balance">$0.00</span>
+          <span id="topbar-balance">Rp 0</span>
         </div>
         <div class="topbar-user" onclick="toggleUserMenu()">
           <div class="user-avatar-sm" id="topbar-avatar">AC</div>
           <i class="fas fa-chevron-down"></i>
         </div>
         <div id="user-dropdown" class="user-dropdown-menu hidden">
-          <a href="#" onclick="navigateTo('profile', null)"><i class="fas fa-user"></i> Profile</a>
           <a href="#" onclick="navigateTo('api-docs', null)"><i class="fas fa-code"></i> API</a>
           <div class="dropdown-divider"></div>
           <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
@@ -236,33 +177,33 @@
         <!-- Stats Cards -->
         <div class="stats-grid">
           <div class="stat-card stat-blue">
-            <div class="stat-icon"><i class="fas fa-wallet"></i></div>
-            <div class="stat-body">
-              <span class="stat-label">Account Balance</span>
-              <span class="stat-value" id="stat-balance">$0.00</span>
-            </div>
-            <a href="#" class="stat-action" onclick="navigateTo('add-funds', null)">
-              Add Funds <i class="fas fa-arrow-right"></i>
-            </a>
-          </div>
-          <div class="stat-card stat-green">
             <div class="stat-icon"><i class="fas fa-shopping-bag"></i></div>
             <div class="stat-body">
-              <span class="stat-label">My Orders</span>
+              <span class="stat-label">Total Orders</span>
               <span class="stat-value" id="stat-orders">0</span>
             </div>
             <a href="#" class="stat-action" onclick="navigateTo('my-orders', null)">
-              See Orders <i class="fas fa-arrow-right"></i>
+              Lihat Orders <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+          <div class="stat-card stat-green">
+            <div class="stat-icon"><i class="fas fa-wallet"></i></div>
+            <div class="stat-body">
+              <span class="stat-label">Saldo</span>
+              <span class="stat-value" id="stat-balance">Rp 0</span>
+            </div>
+            <a href="#" class="stat-action" onclick="navigateTo('my-orders', null)">
+              Riwayat <i class="fas fa-arrow-right"></i>
             </a>
           </div>
           <div class="stat-card stat-red">
             <div class="stat-icon"><i class="fas fa-receipt"></i></div>
             <div class="stat-body">
               <span class="stat-label">Total Spent</span>
-              <span class="stat-value" id="stat-spent">$0.00</span>
+              <span class="stat-value" id="stat-spent">Rp 0</span>
             </div>
-            <a href="#" class="stat-action" onclick="navigateTo('add-funds', null)">
-              Add Funds <i class="fas fa-arrow-right"></i>
+            <a href="#" class="stat-action" onclick="navigateTo('my-orders', null)">
+              Detail <i class="fas fa-arrow-right"></i>
             </a>
           </div>
         </div>
@@ -326,14 +267,14 @@
             <!-- Search Tab -->
             <div id="tab-search" class="tab-content">
               <div class="form-group">
-                <label>Search Order</label>
+                <label>Cari Order</label>
                 <div class="input-wrapper">
-                  <i class="fas fa-search"></i>
-                  <input type="text" id="search-order-id" placeholder="Enter Order ID..." />
+                  <i class="fas fa-search input-icon"></i>
+                  <input type="text" id="search-order-id" placeholder="Masukkan Order ID..." />
                 </div>
               </div>
               <button class="btn-primary" onclick="searchOrder()">
-                <i class="fas fa-search"></i> Search
+                <i class="fas fa-search"></i> Cari
               </button>
               <div id="search-result" class="search-result hidden"></div>
             </div>
@@ -477,94 +418,118 @@
         </div>
       </div>
 
-      <!-- ADD FUNDS PAGE -->
-      <div id="page-add-funds" class="page">
+      <!-- ADMIN: MANAGE USERS PAGE -->
+      <div id="page-admin-users" class="page">
         <div class="page-header">
-          <h1>Tambah Saldo</h1>
-          <p>Top up saldo akun kamu</p>
+          <h1>👥 Manage Users</h1>
+          <p>Tambah akun login untuk pelanggan kamu</p>
         </div>
-        <div class="funds-grid">
-          <div class="card funds-card">
-            <h3><i class="fas fa-credit-card"></i> Metode Pembayaran</h3>
-            <div class="payment-methods">
-              <div class="payment-method active" onclick="selectPayment('qris')">
-                <i class="fas fa-qrcode"></i>
-                <span>QRIS</span>
-              </div>
-              <div class="payment-method" onclick="selectPayment('bank')">
-                <i class="fas fa-university"></i>
-                <span>Transfer Bank</span>
-              </div>
-              <div class="payment-method" onclick="selectPayment('alfamart')">
-                <i class="fas fa-store"></i>
-                <span>Alfamart</span>
-              </div>
-            </div>
-            <div class="form-group" style="margin-top:1.5rem">
-              <label>Jumlah (IDR)</label>
-              <div class="amount-presets">
-                <button class="amount-preset" onclick="setAmount(20000)">Rp 20K</button>
-                <button class="amount-preset" onclick="setAmount(50000)">Rp 50K</button>
-                <button class="amount-preset" onclick="setAmount(100000)">Rp 100K</button>
-                <button class="amount-preset" onclick="setAmount(200000)">Rp 200K</button>
-              </div>
-              <div class="input-wrapper" style="margin-top:.75rem">
-                <i class="fas fa-money-bill-wave"></i>
-                <input type="number" id="fund-amount" placeholder="Masukkan jumlah (min. Rp 10.000)..." min="10000" step="1000" />
-              </div>
-            </div>
-            <button class="btn-primary btn-full" onclick="addFunds()">
-              <i class="fas fa-plus-circle"></i> Tambah Saldo
-            </button>
-            <p class="form-hint" style="margin-top:.75rem;text-align:center">
-              <i class="fas fa-info-circle"></i> Pembayaran diproses otomatis setelah konfirmasi
-            </p>
+
+        <!-- Add User Form -->
+        <div class="card" style="margin-bottom:1.5rem">
+          <div class="card-header">
+            <div class="card-icon"><i class="fas fa-user-plus"></i></div>
+            <h3>Tambah User Baru</h3>
           </div>
-          <div class="card">
-            <h3><i class="fas fa-history"></i> Riwayat Transaksi</h3>
-            <div id="transaction-list" class="transaction-list">
-              <div class="empty-state"><i class="fas fa-receipt"></i><br/>Belum ada transaksi</div>
+          <div class="admin-form-grid">
+            <div class="form-group">
+              <label>Nama</label>
+              <div class="input-wrapper">
+                <i class="fas fa-user input-icon"></i>
+                <input type="text" id="new-user-name" placeholder="Nama pelanggan" />
+              </div>
             </div>
+            <div class="form-group">
+              <label>Email</label>
+              <div class="input-wrapper">
+                <i class="fas fa-envelope input-icon"></i>
+                <input type="email" id="new-user-email" placeholder="email@example.com" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Password</label>
+              <div class="input-wrapper">
+                <i class="fas fa-lock input-icon"></i>
+                <input type="password" id="new-user-password" placeholder="Min. 8 karakter" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Saldo Awal (IDR)</label>
+              <div class="input-wrapper">
+                <i class="fas fa-wallet input-icon"></i>
+                <input type="number" id="new-user-balance" placeholder="0" min="0" step="1000" value="0" />
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:1rem">
+            <button class="btn-primary" onclick="createUser()">
+              <i class="fas fa-user-plus"></i> Buat Akun
+            </button>
+          </div>
+        </div>
+
+        <!-- Users Table -->
+        <div class="card">
+          <div class="card-toolbar">
+            <h3><i class="fas fa-users" style="color:var(--primary)"></i> Daftar User</h3>
+            <div class="search-box">
+              <i class="fas fa-search"></i>
+              <input type="text" id="users-search" placeholder="Cari user..." oninput="filterUsers()" />
+            </div>
+            <button class="btn-outline" onclick="loadUsers()">
+              <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nama</th>
+                  <th>Email</th>
+                  <th>Saldo</th>
+                  <th>Total Orders</th>
+                  <th>Role</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="users-tbody">
+                <tr><td colspan="7" class="empty-state"><i class="fas fa-spinner fa-spin"></i><br/>Loading...</td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
 
-      <!-- REFERRAL PAGE -->
-      <div id="page-referral" class="page">
-        <div class="page-header">
-          <h1>Referral Program</h1>
-          <p>Earn money by referring friends</p>
-        </div>
-        <div class="referral-grid">
-          <div class="card referral-card">
-            <div class="referral-hero">
-              <i class="fas fa-gift"></i>
-              <h3>Earn 5% Commission</h3>
-              <p>For every friend you refer who makes a purchase</p>
-            </div>
+      <!-- MODAL: Top Up Saldo User -->
+      <div id="topup-modal" class="modal-overlay hidden" onclick="closeTopupModal(event)">
+        <div class="modal-card" onclick="event.stopPropagation()">
+          <div class="modal-header">
+            <h3>💰 Top Up Saldo</h3>
+            <button onclick="closeTopupModal()" class="modal-close"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="topup-user-id" />
+            <p id="topup-user-name" style="color:var(--gray-600);margin-bottom:1rem;font-size:.9rem"></p>
             <div class="form-group">
-              <label>Your Referral Link</label>
-              <div class="copy-input">
-                <input type="text" id="referral-link" readonly value="https://smmpanel.com/ref/USER123" />
-                <button onclick="copyReferral()"><i class="fas fa-copy"></i></button>
+              <label>Jumlah Top Up (IDR)</label>
+              <div class="input-wrapper">
+                <i class="fas fa-money-bill-wave input-icon"></i>
+                <input type="number" id="topup-amount" placeholder="Contoh: 100000" min="1000" step="1000" />
               </div>
+            </div>
+            <div class="amount-presets" style="margin-top:.5rem">
+              <button class="amount-preset" onclick="document.getElementById('topup-amount').value=50000">Rp 50K</button>
+              <button class="amount-preset" onclick="document.getElementById('topup-amount').value=100000">Rp 100K</button>
+              <button class="amount-preset" onclick="document.getElementById('topup-amount').value=200000">Rp 200K</button>
+              <button class="amount-preset" onclick="document.getElementById('topup-amount').value=500000">Rp 500K</button>
             </div>
           </div>
-          <div class="referral-stats">
-            <div class="stat-card stat-blue">
-              <div class="stat-icon"><i class="fas fa-users"></i></div>
-              <div class="stat-body">
-                <span class="stat-label">Total Referrals</span>
-                <span class="stat-value">0</span>
-              </div>
-            </div>
-            <div class="stat-card stat-green">
-              <div class="stat-icon"><i class="fas fa-dollar-sign"></i></div>
-              <div class="stat-body">
-                <span class="stat-label">Total Earned</span>
-                <span class="stat-value">$0.00</span>
-              </div>
-            </div>
+          <div class="modal-footer">
+            <button class="btn-outline" onclick="closeTopupModal()">Batal</button>
+            <button class="btn-primary" onclick="doTopup()">
+              <i class="fas fa-plus-circle"></i> Top Up
+            </button>
           </div>
         </div>
       </div>

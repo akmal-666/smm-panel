@@ -20,7 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function bindEvents() {
   document.getElementById('login-form').addEventListener('submit', handleLogin);
-  document.getElementById('register-form').addEventListener('submit', handleRegister);
   document.getElementById('order-qty').addEventListener('input', calcOrderTotal);
   document.addEventListener('click', (e) => {
     const menu = document.getElementById('user-dropdown');
@@ -71,26 +70,7 @@ async function handleLogin(e) {
 
 async function handleRegister(e) {
   e.preventDefault();
-  const name = document.getElementById('reg-name').value.trim();
-  const email = document.getElementById('reg-email').value.trim();
-  const password = document.getElementById('reg-password').value;
-  if (!name || !email || !password) return showToast('error', 'Error', 'Please fill all fields');
-  if (password.length < 8) return showToast('error', 'Error', 'Password must be at least 8 characters');
-  showLoading(true);
-  try {
-    const res = await API.register(name, email, password);
-    if (res.success) {
-      currentUser = res.user;
-      showToast('success', 'Account Created!', 'Welcome, ' + name + '! \u{1F389}');
-      setTimeout(() => showDashboard(), 500);
-    } else {
-      showToast('error', 'Registration Failed', res.message || 'Could not create account');
-    }
-  } catch (err) {
-    showToast('error', 'Error', 'Something went wrong. Please try again.');
-  } finally {
-    showLoading(false);
-  }
+  showToast('error', 'Tidak Tersedia', 'Registrasi tidak dibuka. Hubungi admin.');
 }
 
 function logout() {
@@ -119,8 +99,6 @@ async function initDashboard() {
   }
   await loadServices();
   loadOrders();
-  loadTransactions();
-  updateReferralLink();
   updateApiKey();
 }
 
@@ -157,15 +135,15 @@ function navigateTo(section, el) {
   if (page) page.classList.add('active');
   const labels = {
     'new-order': 'New Order', 'my-orders': 'My Orders', 'services': 'Services',
-    'add-funds': 'Add Funds', 'referral': 'Referral', 'tickets': 'Tickets', 'api-docs': 'API',
-    'admin-services': '⚙️ Manage Services',
+    'tickets': 'Tickets', 'api-docs': 'API',
+    'admin-services': 'Manage Services', 'admin-users': 'Manage Users',
   };
   document.getElementById('breadcrumb-current').textContent = labels[section] || section;
   if (window.innerWidth <= 768) closeSidebar();
   if (section === 'my-orders') loadOrders();
   if (section === 'services') renderServicesTable();
-  if (section === 'add-funds') loadTransactions();
   if (section === 'admin-services') loadAdminServices();
+  if (section === 'admin-users') loadUsers();
   return false;
 }
 
@@ -875,3 +853,146 @@ async function deleteAdminService(id, name) {
     showLoading(false);
   }
 }
+
+// ── ADMIN: MANAGE USERS ──
+let allUsers = [];
+
+async function loadUsers() {
+  const tbody = document.getElementById('users-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="fas fa-spinner fa-spin"></i><br/>Loading...</td></tr>';
+  try {
+    const res = await API.adminGetUsers();
+    if (!res.success) throw new Error(res.error || 'Gagal load');
+    allUsers = res.users || [];
+    renderUsersTable();
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="fas fa-exclamation-circle"></i><br/>' + escapeHtml(e.message) + '</td></tr>';
+  }
+}
+
+function renderUsersTable() {
+  const search = (document.getElementById('users-search')?.value || '').toLowerCase();
+  let list = allUsers;
+  if (search) list = list.filter(u => u.name.toLowerCase().includes(search) || u.email.toLowerCase().includes(search));
+  const tbody = document.getElementById('users-tbody');
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="fas fa-users"></i><br/>Belum ada user</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(u => {
+    const roleClass = u.role === 'admin' ? 'status-completed' : 'status-processing';
+    return '<tr>' +
+      '<td><strong>#' + u.id + '</strong></td>' +
+      '<td>' + escapeHtml(u.name) + '</td>' +
+      '<td>' + escapeHtml(u.email) + '</td>' +
+      '<td><strong>' + formatCurrency(u.balance || 0) + '</strong></td>' +
+      '<td>' + formatNumber(u.total_orders || 0) + '</td>' +
+      '<td><span class="status-badge ' + roleClass + '">' + u.role + '</span></td>' +
+      '<td style="white-space:nowrap">' +
+        (u.role !== 'admin' ? '<button class="btn-success" style="margin-right:.375rem" onclick="openTopupModal(' + u.id + ',\'' + escapeHtml(u.name).replace(/'/g, "\\'") + '\')">' +
+          '<i class="fas fa-plus-circle"></i> Top Up' +
+        '</button>' : '') +
+        (u.role !== 'admin' ? '<button class="btn-outline" style="padding:.3rem .7rem;font-size:.75rem;color:var(--danger);border-color:var(--danger)" onclick="deleteUser(' + u.id + ',\'' + escapeHtml(u.name).replace(/'/g, "\\'") + '\')">' +
+          '<i class="fas fa-trash"></i>' +
+        '</button>' : '<span style="color:var(--gray-400);font-size:.75rem">—</span>') +
+      '</td>' +
+      '</tr>';
+  }).join('');
+}
+
+function filterUsers() { renderUsersTable(); }
+
+async function createUser() {
+  const name = document.getElementById('new-user-name').value.trim();
+  const email = document.getElementById('new-user-email').value.trim();
+  const password = document.getElementById('new-user-password').value;
+  const balance = parseFloat(document.getElementById('new-user-balance').value) || 0;
+
+  if (!name) return showToast('warning', 'Validasi', 'Nama wajib diisi');
+  if (!email) return showToast('warning', 'Validasi', 'Email wajib diisi');
+  if (!password || password.length < 8) return showToast('warning', 'Validasi', 'Password minimal 8 karakter');
+
+  showLoading(true);
+  try {
+    const res = await API.adminCreateUser({ name, email, password, balance });
+    if (res.success) {
+      showToast('success', 'Berhasil!', 'Akun untuk ' + name + ' berhasil dibuat');
+      document.getElementById('new-user-name').value = '';
+      document.getElementById('new-user-email').value = '';
+      document.getElementById('new-user-password').value = '';
+      document.getElementById('new-user-balance').value = '0';
+      await loadUsers();
+    } else {
+      showToast('error', 'Gagal', res.error || 'Tidak bisa membuat user');
+    }
+  } catch (e) {
+    showToast('error', 'Error', e.message);
+  } finally {
+    showLoading(false);
+  }
+}
+
+function openTopupModal(userId, userName) {
+  document.getElementById('topup-user-id').value = userId;
+  document.getElementById('topup-user-name').textContent = 'User: ' + userName;
+  document.getElementById('topup-amount').value = '';
+  document.getElementById('topup-modal').classList.remove('hidden');
+}
+
+function closeTopupModal(e) {
+  if (e && e.target !== document.getElementById('topup-modal')) return;
+  document.getElementById('topup-modal').classList.add('hidden');
+}
+
+async function doTopup() {
+  const userId = document.getElementById('topup-user-id').value;
+  const amount = parseFloat(document.getElementById('topup-amount').value);
+  if (!amount || amount < 1000) return showToast('warning', 'Validasi', 'Jumlah minimal Rp 1.000');
+  showLoading(true);
+  try {
+    const res = await API.adminUpdateUser({ id: parseInt(userId), action: 'topup', amount });
+    if (res.success) {
+      showToast('success', 'Top Up Berhasil!', formatCurrency(amount) + ' ditambahkan ke saldo user');
+      document.getElementById('topup-modal').classList.add('hidden');
+      await loadUsers();
+    } else {
+      showToast('error', 'Gagal', res.error || 'Top up gagal');
+    }
+  } catch (e) {
+    showToast('error', 'Error', e.message);
+  } finally {
+    showLoading(false);
+  }
+}
+
+async function deleteUser(id, name) {
+  if (!confirm('Hapus user "' + name + '"?\n\nSemua data user ini akan dihapus.')) return;
+  showLoading(true);
+  try {
+    const res = await API.adminDeleteUser(id);
+    if (res.success) {
+      showToast('success', 'Dihapus', '"' + name + '" berhasil dihapus');
+      await loadUsers();
+    } else {
+      showToast('error', 'Gagal', res.error || 'Tidak bisa menghapus');
+    }
+  } catch (e) {
+    showToast('error', 'Error', e.message);
+  } finally {
+    showLoading(false);
+  }
+}
+
+// Fix icon di input-wrapper — pastikan icon tidak overlap
+function fixInputIcons() {
+  document.querySelectorAll('.input-wrapper .input-icon').forEach(icon => {
+    icon.style.position = 'absolute';
+    icon.style.left = '.875rem';
+    icon.style.pointerEvents = 'none';
+    icon.style.color = 'var(--gray-400)';
+    const input = icon.nextElementSibling;
+    if (input) input.style.paddingLeft = '2.5rem';
+  });
+}
+document.addEventListener('DOMContentLoaded', fixInputIcons);
