@@ -42,6 +42,20 @@ export async function onRequestPost(context) {
   if (!service_id || !link || !quantity) return err('Field service_id, link, dan quantity wajib diisi');
   if (parseInt(quantity) < 1) return err('Quantity tidak valid');
 
+  // Validasi: service harus ada di tabel lokal dan aktif
+  const localService = await env.DB.prepare(
+    'SELECT * FROM services WHERE service_id=? AND is_active=1'
+  ).bind(String(service_id)).first();
+  if (!localService) {
+    return err('Service tidak tersedia atau belum diaktifkan oleh admin', 404);
+  }
+  if (parseInt(quantity) < localService.min_order) {
+    return err('Minimum order untuk service ini adalah ' + localService.min_order);
+  }
+  if (parseInt(quantity) > localService.max_order) {
+    return err('Maximum order untuk service ini adalah ' + localService.max_order);
+  }
+
   // Ambil data user
   const user = await env.DB.prepare('SELECT * FROM users WHERE id=?').bind(payload.sub).first();
   if (!user) return err('User tidak ditemukan', 404);
@@ -83,11 +97,10 @@ export async function onRequestPost(context) {
     // charge dari AsokaPanel dalam USD
     chargeUsd = parseFloat(provData.charge || 0);
 
-    // Konversi ke IDR + markup (real-time kurs, fallback ke env/hardcode)
-    const kurs = await getUsdToIdr(env);
-    // markup dari env: 2.0 = 100% markup (harga jual 2x harga provider)
-    const markup = parseFloat(env.PRICE_MARKUP) || 2.0;
-    chargeIdr = Math.ceil(chargeUsd * kurs * markup) * 100;
+    // Harga ke user diambil dari tabel lokal (rate dalam IDR, sudah di-set admin)
+    // Bukan dari charge provider — admin yang kontrol harga
+    const qty = parseInt(quantity);
+    chargeIdr = Math.ceil(localService.rate * qty / 1000 / 100) * 100;
 
   } catch (e) {
     return err('Gagal menghubungi provider: ' + e.message, 502);

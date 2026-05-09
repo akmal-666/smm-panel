@@ -186,4 +186,27 @@ const API = {
       body: JSON.stringify({ subject, category, message }),
     });
   },
+
+  // ── ADMIN: SERVICES CRUD ──
+  async adminGetServices() {
+    return this._fetch('/api/admin/services');
+  },
+
+  async adminAddService(data) {
+    return this._fetch('/api/admin/services', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async adminUpdateService(data) {
+    return this._fetch('/api/admin/services', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async adminDeleteService(id) {
+    return this._fetch('/api/admin/services?id=' + id, { method: 'DELETE' });
+  },
 };

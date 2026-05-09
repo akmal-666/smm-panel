@@ -378,3 +378,8 @@ img { max-width: 100%; }
 .sidebar-overlay { display: none; }
 .sidebar-overlay.active { display: block; }
 .form-row { display: flex; gap: .75rem; align-items: center; justify-content: flex-end; }
+
+/* ===== ADMIN SERVICES ===== */
+.admin-form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+.admin-form-grid .form-group { margin-bottom: 0; }
+@media (max-width: 768px) { .admin-form-grid { grid-template-columns: 1fr; } }

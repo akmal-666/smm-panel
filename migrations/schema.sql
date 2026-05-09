@@ -51,6 +51,19 @@ CREATE TABLE IF NOT EXISTS tickets (
   updated_at  TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS services (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  service_id    TEXT    NOT NULL UNIQUE,
+  name          TEXT    NOT NULL,
+  category      TEXT    NOT NULL,
+  rate          REAL    NOT NULL DEFAULT 0,
+  min_order     INTEGER NOT NULL DEFAULT 10,
+  max_order     INTEGER NOT NULL DEFAULT 100000,
+  is_active     INTEGER NOT NULL DEFAULT 1,
+  created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+  updated_at    TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_user ON tickets(user_id);

@@ -21,7 +21,7 @@ const CONFIG = {
   // ── Set to false for production ──
   DEMO_MODE: false,
 
-  APP_NAME: 'SMMSpot',
+  APP_NAME: 'BronetSMM',
   APP_URL: window.location.origin,
 
   // ── Currency: IDR untuk AsokaPanel ──

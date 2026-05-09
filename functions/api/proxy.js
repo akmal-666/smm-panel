@@ -72,18 +72,24 @@ export async function onRequestPost(context) {
     return err('Provider: ' + data.error, 422);
   }
 
-  // Untuk action "services": konversi harga USD → IDR + tambah markup
-  if (action === 'services' && Array.isArray(data)) {
-    const kurs = await getUsdToIdr(env);
-    const markup = parseFloat(env.PRICE_MARKUP) || PRICE_MARKUP;
-    data = data.map(s => ({
-      ...s,
-      // rate asli dari AsokaPanel dalam USD per 1000
-      rate_usd: s.rate,
-      // rate yang ditampilkan ke user: IDR per 1000 (sudah markup)
-      // rate AsokaPanel = USD per 1000, jadi: rate * kurs * markup
-      rate: Math.ceil(parseFloat(s.rate) * kurs * markup) * 100,
+  // Untuk action "services": ambil dari tabel lokal (bukan langsung dari provider)
+  // Hanya service yang is_active=1 yang ditampilkan
+  if (action === 'services') {
+    const result = await env.DB.prepare(
+      'SELECT * FROM services WHERE is_active=1 ORDER BY category ASC, name ASC'
+    ).all();
+    const localServices = result.results || [];
+    // Format agar kompatibel dengan frontend
+    const formatted = localServices.map(s => ({
+      service: s.service_id,
+      name: s.name,
+      category: s.category,
+      rate: s.rate,        // sudah dalam IDR, admin yang set
+      rate_idr: s.rate,
+      min: s.min_order,
+      max: s.max_order,
     }));
+    return json(formatted);
   }
 
   // Sync status order ke D1

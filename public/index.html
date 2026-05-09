@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SMMPanel - Social Media Marketing</title>
+  <title>BronetSMM - Social Media Marketing</title>
   <link rel="stylesheet" href="assets/css/style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -24,7 +24,7 @@
       <div class="auth-card">
         <div class="auth-logo">
           <div class="logo-icon"><i class="fas fa-chart-line"></i></div>
-          <span class="logo-text">smm<strong>spot</strong></span>
+          <span class="logo-text">Bronet<strong>SMM</strong></span>
         </div>
         <h2>Welcome back 👋</h2>
         <p class="auth-subtitle">Sign in to your account to continue</p>
@@ -69,7 +69,7 @@
       <div class="auth-card">
         <div class="auth-logo">
           <div class="logo-icon"><i class="fas fa-chart-line"></i></div>
-          <span class="logo-text">smm<strong>spot</strong></span>
+          <span class="logo-text">Bronet<strong>SMM</strong></span>
         </div>
         <h2>Create Account 🚀</h2>
         <p class="auth-subtitle">Start growing your social media today</p>
@@ -114,7 +114,7 @@
     <div class="sidebar-header">
       <div class="logo">
         <div class="logo-icon"><i class="fas fa-chart-line"></i></div>
-        <span class="logo-text">smm<strong>spot</strong></span>
+        <span class="logo-text">Bronet<strong>SMM</strong></span>
       </div>
       <button class="sidebar-close" onclick="toggleSidebar()">
         <i class="fas fa-times"></i>
@@ -157,6 +157,10 @@
         <span>Tickets</span>
       </a>
       <div class="nav-divider"></div>
+      <a href="#" class="nav-item nav-admin-only hidden" onclick="navigateTo('admin-services', this)">
+        <div class="nav-icon"><i class="fas fa-cogs"></i></div>
+        <span>Manage Services</span>
+      </a>
       <a href="#" class="nav-item" onclick="navigateTo('api-docs', this)">
         <div class="nav-icon"><i class="fas fa-code"></i></div>
         <span>API</span>
@@ -652,6 +656,118 @@
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADMIN: MANAGE SERVICES PAGE -->
+      <div id="page-admin-services" class="page">
+        <div class="page-header">
+          <h1>⚙️ Manage Services</h1>
+          <p>Tambah, edit, atau hapus layanan yang tersedia untuk user</p>
+        </div>
+
+        <!-- Add / Edit Form -->
+        <div class="card" id="admin-service-form-card">
+          <div class="card-header">
+            <div class="card-icon"><i class="fas fa-plus-circle"></i></div>
+            <h3 id="admin-form-title">Tambah Service Baru</h3>
+          </div>
+          <div class="admin-form-grid">
+            <input type="hidden" id="admin-svc-db-id" value="" />
+            <div class="form-group">
+              <label>Service ID <span style="color:var(--gray-400);font-weight:400;text-transform:none">(dari provider, misal: 1001)</span></label>
+              <input type="text" id="admin-svc-id" placeholder="Contoh: 1001" />
+            </div>
+            <div class="form-group">
+              <label>Nama Service</label>
+              <input type="text" id="admin-svc-name" placeholder="Contoh: Instagram - Followers | Real | Instant" />
+            </div>
+            <div class="form-group">
+              <label>Kategori</label>
+              <input type="text" id="admin-svc-category" placeholder="Contoh: Instagram, TikTok, YouTube" list="category-suggestions" />
+              <datalist id="category-suggestions">
+                <option value="Instagram" />
+                <option value="TikTok" />
+                <option value="YouTube" />
+                <option value="Facebook" />
+                <option value="Twitter/X" />
+                <option value="Spotify" />
+                <option value="Telegram" />
+              </datalist>
+            </div>
+            <div class="form-group">
+              <label>Harga per 1000 (IDR)</label>
+              <div class="input-wrapper">
+                <i class="fas fa-money-bill-wave"></i>
+                <input type="number" id="admin-svc-rate" placeholder="Contoh: 40000" min="0" step="100" />
+              </div>
+              <div class="form-hint" id="admin-rate-preview"></div>
+            </div>
+            <div class="form-group">
+              <label>Min Order</label>
+              <input type="number" id="admin-svc-min" placeholder="10" min="1" value="10" />
+            </div>
+            <div class="form-group">
+              <label>Max Order</label>
+              <input type="number" id="admin-svc-max" placeholder="100000" min="1" value="100000" />
+            </div>
+            <div class="form-group">
+              <label>Status</label>
+              <div class="select-wrapper">
+                <select id="admin-svc-active">
+                  <option value="1">✅ Aktif (bisa diorder)</option>
+                  <option value="0">❌ Nonaktif (tidak bisa diorder)</option>
+                </select>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+            </div>
+          </div>
+          <div class="form-row" style="margin-top:1rem">
+            <button class="btn-outline" onclick="resetAdminForm()">
+              <i class="fas fa-times"></i> Reset
+            </button>
+            <button class="btn-primary" onclick="saveAdminService()">
+              <i class="fas fa-save"></i> <span id="admin-save-btn-text">Simpan Service</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Services Table -->
+        <div class="card" style="margin-top:1.5rem">
+          <div class="card-toolbar">
+            <h3><i class="fas fa-list" style="color:var(--primary)"></i> Daftar Services</h3>
+            <div class="search-box">
+              <i class="fas fa-search"></i>
+              <input type="text" id="admin-services-search" placeholder="Cari service..." oninput="filterAdminServices()" />
+            </div>
+            <div class="filter-group">
+              <select id="admin-services-cat-filter" onchange="filterAdminServices()">
+                <option value="">Semua Kategori</option>
+              </select>
+            </div>
+            <button class="btn-outline" onclick="loadAdminServices()">
+              <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Service ID</th>
+                  <th>Nama</th>
+                  <th>Kategori</th>
+                  <th>Harga/1K</th>
+                  <th>Min</th>
+                  <th>Max</th>
+                  <th>Status</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="admin-services-tbody">
+                <tr><td colspan="8" class="empty-state"><i class="fas fa-spinner fa-spin"></i><br/>Loading...</td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
