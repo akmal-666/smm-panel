@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SMMPanel - Social Media Marketing</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+
+<!-- AUTH PAGES -->
+<div id="auth-wrapper" class="auth-wrapper">
+  <!-- Login Page -->
+  <div id="login-page" class="auth-page active">
+    <div class="auth-bg">
+      <div class="auth-blob blob-1"></div>
+      <div class="auth-blob blob-2"></div>
+    </div>
+    <div class="auth-container">
+      <div class="auth-card">
+        <div class="auth-logo">
+          <div class="logo-icon"><i class="fas fa-chart-line"></i></div>
+          <span class="logo-text">smm<strong>spot</strong></span>
+        </div>
+        <h2>Welcome back 👋</h2>
+        <p class="auth-subtitle">Sign in to your account to continue</p>
+        <form id="login-form" class="auth-form">
+          <div class="form-group">
+            <label>Email Address</label>
+            <div class="input-wrapper">
+              <i class="fas fa-envelope"></i>
+              <input type="email" id="login-email" placeholder="you@example.com" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <div class="input-wrapper">
+              <i class="fas fa-lock"></i>
+              <input type="password" id="login-password" placeholder="••••••••" required />
+              <button type="button" class="toggle-pass" onclick="togglePassword('login-password')">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="checkbox-label">
+              <input type="checkbox" /> Remember me
+            </label>
+            <a href="#" class="forgot-link">Forgot password?</a>
+          </div>
+          <button type="submit" class="btn-primary btn-full">Sign In</button>
+        </form>
+        <p class="auth-switch">Don't have an account? <a href="#" onclick="showPage('register-page')">Sign up</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Register Page -->
+  <div id="register-page" class="auth-page">
+    <div class="auth-bg">
+      <div class="auth-blob blob-1"></div>
+      <div class="auth-blob blob-2"></div>
+    </div>
+    <div class="auth-container">
+      <div class="auth-card">
+        <div class="auth-logo">
+          <div class="logo-icon"><i class="fas fa-chart-line"></i></div>
+          <span class="logo-text">smm<strong>spot</strong></span>
+        </div>
+        <h2>Create Account 🚀</h2>
+        <p class="auth-subtitle">Start growing your social media today</p>
+        <form id="register-form" class="auth-form">
+          <div class="form-group">
+            <label>Full Name</label>
+            <div class="input-wrapper">
+              <i class="fas fa-user"></i>
+              <input type="text" id="reg-name" placeholder="John Doe" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Email Address</label>
+            <div class="input-wrapper">
+              <i class="fas fa-envelope"></i>
+              <input type="email" id="reg-email" placeholder="you@example.com" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <div class="input-wrapper">
+              <i class="fas fa-lock"></i>
+              <input type="password" id="reg-password" placeholder="Min. 8 characters" required />
+              <button type="button" class="toggle-pass" onclick="togglePassword('reg-password')">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary btn-full">Create Account</button>
+        </form>
+        <p class="auth-switch">Already have an account? <a href="#" onclick="showPage('login-page')">Sign in</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="dashboard hidden">
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="logo-icon"><i class="fas fa-chart-line"></i></div>
+        <span class="logo-text">smm<strong>spot</strong></span>
+      </div>
+      <button class="sidebar-close" onclick="toggleSidebar()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="user-profile">
+      <div class="user-avatar" id="sidebar-avatar">AC</div>
+      <div class="user-info">
+        <span class="user-name" id="sidebar-name">Loading...</span>
+        <span class="user-role">Member</span>
+      </div>
+      <button class="user-dropdown-btn"><i class="fas fa-chevron-down"></i></button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" onclick="navigateTo('new-order', this)">
+        <div class="nav-icon"><i class="fas fa-shopping-cart"></i></div>
+        <span>New Order</span>
+        <i class="fas fa-chevron-right nav-arrow"></i>
+      </a>
+      <a href="#" class="nav-item" onclick="navigateTo('my-orders', this)">
+        <div class="nav-icon"><i class="fas fa-list-alt"></i></div>
+        <span>My Orders</span>
+      </a>
+      <a href="#" class="nav-item" onclick="navigateTo('services', this)">
+        <div class="nav-icon"><i class="fas fa-th-large"></i></div>
+        <span>Services</span>
+      </a>
+      <a href="#" class="nav-item" onclick="navigateTo('add-funds', this)">
+        <div class="nav-icon"><i class="fas fa-wallet"></i></div>
+        <span>Add Funds</span>
+      </a>
+      <a href="#" class="nav-item" onclick="navigateTo('referral', this)">
+        <div class="nav-icon"><i class="fas fa-user-plus"></i></div>
+        <span>Referral</span>
+      </a>
+      <a href="#" class="nav-item" onclick="navigateTo('tickets', this)">
+        <div class="nav-icon"><i class="fas fa-ticket-alt"></i></div>
+        <span>Tickets</span>
+      </a>
+      <div class="nav-divider"></div>
+      <a href="#" class="nav-item" onclick="navigateTo('api-docs', this)">
+        <div class="nav-icon"><i class="fas fa-code"></i></div>
+        <span>API</span>
+      </a>
+      <a href="#" class="nav-item" onclick="logout()">
+        <div class="nav-icon"><i class="fas fa-sign-out-alt"></i></div>
+        <span>Logout</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-promo">
+        <div class="promo-icon"><i class="fas fa-store"></i></div>
+        <div class="promo-text">
+          <strong>My Brand</strong>
+          <span>Net Sales</span>
+          <span class="promo-amount">$500,000 <em>+110%</em></span>
+        </div>
+        <i class="fas fa-arrow-trend-up promo-trend"></i>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Sidebar Overlay -->
+  <div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-toggle" onclick="toggleSidebar()">
+          <i class="fas fa-bars"></i>
+        </button>
+        <div class="breadcrumb">
+          <span>Home</span>
+          <i class="fas fa-chevron-right"></i>
+          <span id="breadcrumb-current">New Order</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="topbar-btn" onclick="navigateTo('add-funds', null)">
+          <i class="fas fa-plus"></i>
+          <span>Add Funds</span>
+        </button>
+        <div class="topbar-balance">
+          <i class="fas fa-wallet"></i>
+          <span id="topbar-balance">$0.00</span>
+        </div>
+        <div class="topbar-user" onclick="toggleUserMenu()">
+          <div class="user-avatar-sm" id="topbar-avatar">AC</div>
+          <i class="fas fa-chevron-down"></i>
+        </div>
+        <div id="user-dropdown" class="user-dropdown-menu hidden">
+          <a href="#" onclick="navigateTo('profile', null)"><i class="fas fa-user"></i> Profile</a>
+          <a href="#" onclick="navigateTo('api-docs', null)"><i class="fas fa-code"></i> API</a>
+          <div class="dropdown-divider"></div>
+          <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <div class="page-content">
+
+      <!-- NEW ORDER PAGE -->
+      <div id="page-new-order" class="page active">
+        <div class="page-header">
+          <h1 id="welcome-title">Welcome 👋</h1>
+          <p>Connect and manage your social media easily, streamlining your transactional experience.</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+          <div class="stat-card stat-blue">
+            <div class="stat-icon"><i class="fas fa-wallet"></i></div>
+            <div class="stat-body">
+              <span class="stat-label">Account Balance</span>
+              <span class="stat-value" id="stat-balance">$0.00</span>
+            </div>
+            <a href="#" class="stat-action" onclick="navigateTo('add-funds', null)">
+              Add Funds <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+          <div class="stat-card stat-green">
+            <div class="stat-icon"><i class="fas fa-shopping-bag"></i></div>
+            <div class="stat-body">
+              <span class="stat-label">My Orders</span>
+              <span class="stat-value" id="stat-orders">0</span>
+            </div>
+            <a href="#" class="stat-action" onclick="navigateTo('my-orders', null)">
+              See Orders <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+          <div class="stat-card stat-red">
+            <div class="stat-icon"><i class="fas fa-receipt"></i></div>
+            <div class="stat-body">
+              <span class="stat-label">Total Spent</span>
+              <span class="stat-value" id="stat-spent">$0.00</span>
+            </div>
+            <a href="#" class="stat-action" onclick="navigateTo('add-funds', null)">
+              Add Funds <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Order Form -->
+        <div class="order-layout">
+          <div class="order-form-card">
+            <div class="card-header">
+              <div class="card-icon"><i class="fas fa-shopping-cart"></i></div>
+              <h3>Place your order</h3>
+            </div>
+            <div class="order-tabs">
+              <button class="order-tab active" onclick="switchOrderTab('new', this)">New Order</button>
+              <button class="order-tab" onclick="switchOrderTab('search', this)">Search</button>
+              <button class="order-tab" onclick="switchOrderTab('bulk', this)">Bulk Order</button>
+            </div>
+
+            <!-- New Order Tab -->
+            <div id="tab-new" class="tab-content active">
+              <div class="form-group">
+                <label>Choose Category</label>
+                <div class="select-wrapper">
+                  <select id="category-select" onchange="loadServicesByCategory()">
+                    <option value="">Choose Category</option>
+                  </select>
+                  <i class="fas fa-chevron-down"></i>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Choose Service</label>
+                <div class="select-wrapper">
+                  <select id="service-select" onchange="onServiceChange()">
+                    <option value="">Choose Service</option>
+                  </select>
+                  <i class="fas fa-chevron-down"></i>
+                </div>
+              </div>
+              <div id="service-info" class="service-info hidden">
+                <div class="service-info-row">
+                  <span><i class="fas fa-tag"></i> Min: <strong id="info-min">-</strong></span>
+                  <span><i class="fas fa-tag"></i> Max: <strong id="info-max">-</strong></span>
+                  <span><i class="fas fa-dollar-sign"></i> Rate: <strong id="info-rate">-</strong></span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Link</label>
+                <input type="url" id="order-link" placeholder="Insert your link here..." />
+              </div>
+              <div class="form-group">
+                <label>Quantity</label>
+                <input type="number" id="order-qty" placeholder="Min: 10 - Max: 500" min="10" />
+                <div class="qty-info">
+                  <span>Total: <strong id="order-total">$0.00</strong></span>
+                </div>
+              </div>
+              <button class="btn-primary btn-full btn-order" onclick="placeOrder()">
+                <i class="fas fa-shopping-cart"></i> Place Order
+              </button>
+            </div>
+
+            <!-- Search Tab -->
+            <div id="tab-search" class="tab-content">
+              <div class="form-group">
+                <label>Search Order</label>
+                <div class="input-wrapper">
+                  <i class="fas fa-search"></i>
+                  <input type="text" id="search-order-id" placeholder="Enter Order ID..." />
+                </div>
+              </div>
+              <button class="btn-primary" onclick="searchOrder()">
+                <i class="fas fa-search"></i> Search
+              </button>
+              <div id="search-result" class="search-result hidden"></div>
+            </div>
+
+            <!-- Bulk Order Tab -->
+            <div id="tab-bulk" class="tab-content">
+              <div class="form-group">
+                <label>Bulk Orders</label>
+                <textarea id="bulk-input" placeholder="service_id|link|quantity&#10;1001|https://instagram.com/post/xxx|100&#10;1002|https://tiktok.com/@user/video/xxx|500" rows="8"></textarea>
+                <p class="form-hint">Format: service_id|link|quantity (one per line)</p>
+              </div>
+              <button class="btn-primary btn-full" onclick="placeBulkOrder()">
+                <i class="fas fa-layer-group"></i> Place Bulk Order
+              </button>
+            </div>
+          </div>
+
+          <!-- Service Detail Card -->
+          <div class="service-detail-card" id="service-detail-card">
+            <div class="service-detail-placeholder">
+              <i class="fas fa-info-circle"></i>
+              <p>Select a service to see details</p>
+            </div>
+            <div id="service-detail-content" class="hidden">
+              <div class="service-platform-badge" id="detail-platform"></div>
+              <h4 id="detail-name">Service Name</h4>
+              <p class="detail-id">Product ID: <span id="detail-id"></span></p>
+              <div class="detail-stats">
+                <div class="detail-stat">
+                  <i class="fas fa-clock"></i>
+                  <div>
+                    <span>Completion Time</span>
+                    <strong id="detail-time">-</strong>
+                  </div>
+                </div>
+                <div class="detail-stat">
+                  <i class="fas fa-shield-alt"></i>
+                  <div>
+                    <span>Quality</span>
+                    <strong>High Quality</strong>
+                  </div>
+                </div>
+              </div>
+              <div class="detail-how">
+                <h5>How to Place Order?</h5>
+                <ul>
+                  <li>Please enter your post link.</li>
+                  <li>Choose how many you want.</li>
+                  <li>Finish your purchase.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MY ORDERS PAGE -->
+      <div id="page-my-orders" class="page">
+        <div class="page-header">
+          <h1>My Orders</h1>
+          <p>Track and manage all your orders</p>
+        </div>
+        <div class="card">
+          <div class="card-toolbar">
+            <div class="search-box">
+              <i class="fas fa-search"></i>
+              <input type="text" id="orders-search" placeholder="Search orders..." oninput="filterOrders()" />
+            </div>
+            <div class="filter-group">
+              <select id="orders-filter" onchange="filterOrders()">
+                <option value="">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="processing">Processing</option>
+                <option value="completed">Completed</option>
+                <option value="partial">Partial</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+            <button class="btn-outline" onclick="loadOrders()">
+              <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Service</th>
+                  <th>Link</th>
+                  <th>Qty</th>
+                  <th>Charge</th>
+                  <th>Start</th>
+                  <th>Remains</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="orders-tbody">
+                <tr><td colspan="8" class="empty-state"><i class="fas fa-inbox"></i><br/>No orders yet</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SERVICES PAGE -->
+      <div id="page-services" class="page">
+        <div class="page-header">
+          <h1>Services</h1>
+          <p>Browse all available services</p>
+        </div>
+        <div class="card">
+          <div class="card-toolbar">
+            <div class="search-box">
+              <i class="fas fa-search"></i>
+              <input type="text" id="services-search" placeholder="Search services..." oninput="filterServices()" />
+            </div>
+            <div class="filter-group">
+              <select id="services-category-filter" onchange="filterServices()">
+                <option value="">All Categories</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Service Name</th>
+                  <th>Category</th>
+                  <th>Rate/1K</th>
+                  <th>Min</th>
+                  <th>Max</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="services-tbody">
+                <tr><td colspan="7" class="empty-state"><i class="fas fa-spinner fa-spin"></i><br/>Loading services...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADD FUNDS PAGE -->
+      <div id="page-add-funds" class="page">
+        <div class="page-header">
+          <h1>Add Funds</h1>
+          <p>Top up your account balance</p>
+        </div>
+        <div class="funds-grid">
+          <div class="card funds-card">
+            <h3><i class="fas fa-credit-card"></i> Payment Methods</h3>
+            <div class="payment-methods">
+              <div class="payment-method active" onclick="selectPayment('crypto')">
+                <i class="fab fa-bitcoin"></i>
+                <span>Crypto</span>
+              </div>
+              <div class="payment-method" onclick="selectPayment('paypal')">
+                <i class="fab fa-paypal"></i>
+                <span>PayPal</span>
+              </div>
+              <div class="payment-method" onclick="selectPayment('bank')">
+                <i class="fas fa-university"></i>
+                <span>Bank Transfer</span>
+              </div>
+            </div>
+            <div class="form-group" style="margin-top:1.5rem">
+              <label>Amount (USD)</label>
+              <div class="amount-presets">
+                <button class="amount-preset" onclick="setAmount(10)">$10</button>
+                <button class="amount-preset" onclick="setAmount(25)">$25</button>
+                <button class="amount-preset" onclick="setAmount(50)">$50</button>
+                <button class="amount-preset" onclick="setAmount(100)">$100</button>
+              </div>
+              <div class="input-wrapper" style="margin-top:.75rem">
+                <i class="fas fa-dollar-sign"></i>
+                <input type="number" id="fund-amount" placeholder="Enter amount..." min="1" />
+              </div>
+            </div>
+            <button class="btn-primary btn-full" onclick="addFunds()">
+              <i class="fas fa-plus-circle"></i> Add Funds
+            </button>
+          </div>
+          <div class="card">
+            <h3><i class="fas fa-history"></i> Transaction History</h3>
+            <div id="transaction-list" class="transaction-list">
+              <div class="empty-state"><i class="fas fa-receipt"></i><br/>No transactions yet</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REFERRAL PAGE -->
+      <div id="page-referral" class="page">
+        <div class="page-header">
+          <h1>Referral Program</h1>
+          <p>Earn money by referring friends</p>
+        </div>
+        <div class="referral-grid">
+          <div class="card referral-card">
+            <div class="referral-hero">
+              <i class="fas fa-gift"></i>
+              <h3>Earn 5% Commission</h3>
+              <p>For every friend you refer who makes a purchase</p>
+            </div>
+            <div class="form-group">
+              <label>Your Referral Link</label>
+              <div class="copy-input">
+                <input type="text" id="referral-link" readonly value="https://smmpanel.com/ref/USER123" />
+                <button onclick="copyReferral()"><i class="fas fa-copy"></i></button>
+              </div>
+            </div>
+          </div>
+          <div class="referral-stats">
+            <div class="stat-card stat-blue">
+              <div class="stat-icon"><i class="fas fa-users"></i></div>
+              <div class="stat-body">
+                <span class="stat-label">Total Referrals</span>
+                <span class="stat-value">0</span>
+              </div>
+            </div>
+            <div class="stat-card stat-green">
+              <div class="stat-icon"><i class="fas fa-dollar-sign"></i></div>
+              <div class="stat-body">
+                <span class="stat-label">Total Earned</span>
+                <span class="stat-value">$0.00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TICKETS PAGE -->
+      <div id="page-tickets" class="page">
+        <div class="page-header">
+          <h1>Support Tickets</h1>
+          <p>Get help from our support team</p>
+        </div>
+        <div class="tickets-layout">
+          <div class="card">
+            <div class="card-toolbar">
+              <h3>My Tickets</h3>
+              <button class="btn-primary" onclick="showNewTicket()">
+                <i class="fas fa-plus"></i> New Ticket
+              </button>
+            </div>
+            <div id="tickets-list" class="tickets-list">
+              <div class="empty-state"><i class="fas fa-ticket-alt"></i><br/>No tickets yet</div>
+            </div>
+          </div>
+          <div id="new-ticket-form" class="card hidden">
+            <h3>Create New Ticket</h3>
+            <div class="form-group">
+              <label>Subject</label>
+              <input type="text" id="ticket-subject" placeholder="Brief description of your issue" />
+            </div>
+            <div class="form-group">
+              <label>Category</label>
+              <div class="select-wrapper">
+                <select id="ticket-category">
+                  <option>Order Issue</option>
+                  <option>Payment Issue</option>
+                  <option>Technical Issue</option>
+                  <option>Other</option>
+                </select>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Message</label>
+              <textarea id="ticket-message" rows="5" placeholder="Describe your issue in detail..."></textarea>
+            </div>
+            <div class="form-row">
+              <button class="btn-outline" onclick="hideNewTicket()">Cancel</button>
+              <button class="btn-primary" onclick="submitTicket()">Submit Ticket</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- API DOCS PAGE -->
+      <div id="page-api-docs" class="page">
+        <div class="page-header">
+          <h1>API Documentation</h1>
+          <p>Integrate our services into your platform</p>
+        </div>
+        <div class="card">
+          <div class="api-key-section">
+            <h3><i class="fas fa-key"></i> Your API Key</h3>
+            <div class="copy-input">
+              <input type="text" id="api-key-display" readonly value="Loading..." />
+              <button onclick="copyApiKey()"><i class="fas fa-copy"></i></button>
+            </div>
+            <button class="btn-outline" style="margin-top:.75rem" onclick="regenerateApiKey()">
+              <i class="fas fa-sync-alt"></i> Regenerate Key
+            </button>
+          </div>
+          <div class="api-docs-content">
+            <h3>Endpoints</h3>
+            <div class="api-endpoint">
+              <div class="endpoint-header">
+                <span class="method post">POST</span>
+                <code>/api/v2</code>
+              </div>
+              <p>Base URL: <code>https://smmpanel.com/api/v2</code></p>
+            </div>
+            <div class="api-params">
+              <h4>Parameters</h4>
+              <table class="data-table">
+                <thead><tr><th>Parameter</th><th>Description</th></tr></thead>
+                <tbody>
+                  <tr><td><code>key</code></td><td>Your API key</td></tr>
+                  <tr><td><code>action</code></td><td>Action to perform (services, add, status, balance)</td></tr>
+                  <tr><td><code>service</code></td><td>Service ID (for add action)</td></tr>
+                  <tr><td><code>link</code></td><td>Link to the post/profile</td></tr>
+                  <tr><td><code>quantity</code></td><td>Number of items to order</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end page-content -->
+  </main>
+</div>
+
+<!-- TOAST NOTIFICATION -->
+<div id="toast-container" class="toast-container"></div>
+
+<!-- LOADING OVERLAY -->
+<div id="loading-overlay" class="loading-overlay hidden">
+  <div class="loading-spinner">
+    <div class="spinner"></div>
+    <p>Processing...</p>
+  </div>
+</div>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>

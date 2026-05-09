@@ -1,0 +1,13 @@
+{
+  "name": "smm-panel",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler pages dev ./public --compatibility-date=2024-01-01",
+    "build": "echo 'Static site - no build needed'",
+    "deploy": "wrangler pages deploy ./public"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}
