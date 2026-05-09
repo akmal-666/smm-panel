@@ -146,6 +146,7 @@ function navigateTo(section, el) {
     'new-order': 'New Order', 'my-orders': 'My Orders', 'services': 'Services',
     'tickets': 'Tickets', 'api-docs': 'API',
     'admin-services': 'Manage Services', 'admin-users': 'Manage Users',
+    'admin-report': 'Laporan Keuangan',
   };
   document.getElementById('breadcrumb-current').textContent = labels[section] || section;
   if (window.innerWidth <= 768) closeSidebar();
@@ -153,6 +154,7 @@ function navigateTo(section, el) {
   if (section === 'services') renderServicesTable();
   if (section === 'admin-services') loadAdminServices();
   if (section === 'admin-users') loadUsers();
+  if (section === 'admin-report') loadReport();
   return false;
 }
 
@@ -1205,3 +1207,145 @@ function fixInputIcons() {
   });
 }
 document.addEventListener('DOMContentLoaded', fixInputIcons);
+
+// ── ADMIN: LAPORAN KEUANGAN ──
+let reportPeriod = 'month';
+
+function setReportPeriod(period, btn) {
+  reportPeriod = period;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const customRange = document.getElementById('custom-date-range');
+  if (period === 'custom') {
+    customRange.classList.remove('hidden');
+    // Set default: bulan ini
+    const now = new Date();
+    const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    const to = now.toISOString().split('T')[0];
+    if (!document.getElementById('report-from').value) document.getElementById('report-from').value = from;
+    if (!document.getElementById('report-to').value) document.getElementById('report-to').value = to;
+  } else {
+    customRange.classList.add('hidden');
+    loadReport();
+  }
+}
+
+async function loadReport() {
+  // Tampilkan loading di semua section
+  ['rpt-revenue','rpt-orders','rpt-users','rpt-topup'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  });
+
+  let url = '/api/admin/report?period=' + reportPeriod;
+  if (reportPeriod === 'custom') {
+    const from = document.getElementById('report-from').value;
+    const to = document.getElementById('report-to').value;
+    if (!from || !to) return showToast('warning', 'Validasi', 'Pilih tanggal dari dan sampai');
+    url += '&from=' + from + '&to=' + to;
+  }
+
+  try {
+    const data = await API._fetch(url);
+    if (!data.success) throw new Error(data.error || 'Gagal load laporan');
+    renderReport(data);
+  } catch (e) {
+    showToast('error', 'Error', e.message);
+  }
+}
+
+function renderReport(data) {
+  const { summary, daily_revenue, top_users, top_services, balance_snapshot, period } = data;
+
+  // Period label
+  const label = document.getElementById('report-period-label');
+  if (label) label.textContent = 'Periode: ' + period.from + ' s/d ' + period.to;
+
+  // Summary cards
+  document.getElementById('rpt-revenue').textContent = formatCurrency(summary.total_revenue || 0);
+  document.getElementById('rpt-orders').textContent = formatNumber(summary.total_orders || 0);
+  document.getElementById('rpt-users').textContent = formatNumber(summary.active_users || 0);
+  document.getElementById('rpt-topup').textContent = formatCurrency(summary.total_topup || 0);
+
+  // Status breakdown
+  const statusEl = document.getElementById('rpt-status-breakdown');
+  const total = summary.total_orders || 1;
+  const statuses = [
+    { label: 'Completed',  count: summary.orders_completed || 0,  revenue: summary.revenue_completed || 0,  color: '#10b981' },
+    { label: 'Processing', count: summary.orders_processing || 0, revenue: summary.revenue_processing || 0, color: '#2563eb' },
+    { label: 'Pending',    count: summary.orders_pending || 0,    revenue: summary.revenue_pending || 0,    color: '#f59e0b' },
+    { label: 'Cancelled',  count: summary.orders_cancelled || 0,  revenue: summary.revenue_cancelled || 0,  color: '#ef4444' },
+  ];
+  statusEl.innerHTML = statuses.map(s => {
+    const pct = Math.round((s.count / total) * 100);
+    return '<div class="status-row">' +
+      '<span class="status-row-label">' + s.label + '</span>' +
+      '<div class="status-row-bar-wrap"><div class="status-row-bar" style="width:' + pct + '%;background:' + s.color + '"></div></div>' +
+      '<span class="status-row-val">' + formatNumber(s.count) + ' (' + pct + '%)</span>' +
+      '</div>' +
+      '<div style="font-size:.75rem;color:var(--gray-400);margin-left:108px;margin-top:-.25rem;margin-bottom:.25rem">' + formatCurrency(s.revenue) + '</div>';
+  }).join('');
+
+  // Balance snapshot
+  const balEl = document.getElementById('rpt-balance-snapshot');
+  balEl.innerHTML =
+    '<div class="status-row"><span class="status-row-label">Total User</span><span class="status-row-val" style="width:auto">' + formatNumber(balance_snapshot.user_count) + ' user</span></div>' +
+    '<div class="status-row" style="margin-top:.5rem"><span class="status-row-label">Total Saldo</span><span class="status-row-val" style="width:auto;color:var(--success);font-size:1rem">' + formatCurrency(balance_snapshot.total_balance) + '</span></div>' +
+    '<p style="font-size:.75rem;color:var(--gray-400);margin-top:.75rem"><i class="fas fa-info-circle"></i> Snapshot saldo semua user saat ini (bukan dalam periode)</p>';
+
+  // Chart harian
+  renderDailyChart(daily_revenue || []);
+
+  // Top users
+  const tuBody = document.getElementById('rpt-top-users');
+  if (!top_users.length) {
+    tuBody.innerHTML = '<tr><td colspan="4" class="empty-state">Tidak ada data</td></tr>';
+  } else {
+    tuBody.innerHTML = top_users.map((u, i) =>
+      '<tr>' +
+      '<td><strong>' + (i + 1) + '</strong></td>' +
+      '<td>' + escapeHtml(u.name) + '<br/><small style="color:var(--gray-400)">' + escapeHtml(u.email) + '</small></td>' +
+      '<td>' + formatNumber(u.order_count) + '</td>' +
+      '<td><strong>' + formatCurrency(u.total_spent) + '</strong></td>' +
+      '</tr>'
+    ).join('');
+  }
+
+  // Top services
+  const tsBody = document.getElementById('rpt-top-services');
+  if (!top_services.length) {
+    tsBody.innerHTML = '<tr><td colspan="4" class="empty-state">Tidak ada data</td></tr>';
+  } else {
+    tsBody.innerHTML = top_services.map((s, i) =>
+      '<tr>' +
+      '<td><strong>' + (i + 1) + '</strong></td>' +
+      '<td style="word-break:break-word;white-space:normal;font-size:.8rem">' + escapeHtml(s.service_name || 'Service #' + s.service_id) + '</td>' +
+      '<td>' + formatNumber(s.order_count) + '</td>' +
+      '<td><strong>' + formatCurrency(s.total_revenue) + '</strong></td>' +
+      '</tr>'
+    ).join('');
+  }
+}
+
+function renderDailyChart(dailyData) {
+  const wrapper = document.getElementById('rpt-chart');
+  if (!dailyData.length) {
+    wrapper.innerHTML = '<div class="empty-state"><i class="fas fa-chart-line"></i><br/>Tidak ada data untuk periode ini</div>';
+    return;
+  }
+
+  const maxRevenue = Math.max(...dailyData.map(d => d.revenue), 1);
+
+  const bars = dailyData.map(d => {
+    const heightPct = Math.max((d.revenue / maxRevenue) * 100, 1);
+    const dateLabel = d.date ? d.date.slice(5) : ''; // MM-DD
+    return '<div class="chart-col">' +
+      '<div class="chart-bar" style="height:' + heightPct + '%">' +
+        '<div class="chart-bar-tooltip">' + d.date + '<br/>' + formatCurrency(d.revenue) + '<br/>' + formatNumber(d.order_count) + ' order</div>' +
+      '</div>' +
+      '<span class="chart-date">' + dateLabel + '</span>' +
+      '</div>';
+  }).join('');
+
+  wrapper.innerHTML = '<div class="report-chart">' + bars + '</div>';
+}

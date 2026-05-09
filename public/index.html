@@ -97,6 +97,10 @@
         <div class="nav-icon"><i class="fas fa-users-cog"></i></div>
         <span>Manage Users</span>
       </a>
+      <a href="#" class="nav-item nav-admin-only hidden" onclick="navigateTo('admin-report', this)">
+        <div class="nav-icon"><i class="fas fa-chart-bar"></i></div>
+        <span>Laporan Keuangan</span>
+      </a>
       <div class="nav-divider"></div>
       <a href="#" class="nav-item" onclick="navigateTo('api-docs', this)">
         <div class="nav-icon"><i class="fas fa-code"></i></div>
@@ -755,6 +759,134 @@
             </button>
           </div>
         </div>
+      </div>
+
+      <!-- ADMIN: LAPORAN KEUANGAN -->
+      <div id="page-admin-report" class="page">
+        <div class="page-header">
+          <h1>📊 Laporan Keuangan</h1>
+          <p>Ringkasan pemasukan, order, dan aktivitas user</p>
+        </div>
+
+        <!-- Filter Periode -->
+        <div class="card" style="margin-bottom:1.5rem">
+          <div class="report-filter-row">
+            <div class="report-period-btns">
+              <button class="period-btn active" onclick="setReportPeriod('today', this)">Hari Ini</button>
+              <button class="period-btn" onclick="setReportPeriod('week', this)">7 Hari</button>
+              <button class="period-btn" onclick="setReportPeriod('month', this)">Bulan Ini</button>
+              <button class="period-btn" onclick="setReportPeriod('year', this)">Tahun Ini</button>
+              <button class="period-btn" onclick="setReportPeriod('custom', this)">Custom</button>
+            </div>
+            <div id="custom-date-range" class="custom-date-range hidden">
+              <input type="date" id="report-from" />
+              <span>—</span>
+              <input type="date" id="report-to" />
+              <button class="btn-primary" style="padding:.5rem 1rem" onclick="loadReport()">
+                <i class="fas fa-search"></i> Tampilkan
+              </button>
+            </div>
+            <button class="btn-outline" onclick="loadReport()">
+              <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+          </div>
+          <div id="report-period-label" class="report-period-label"></div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="report-summary-grid" id="report-summary">
+          <div class="report-card report-card-green">
+            <div class="report-card-icon"><i class="fas fa-money-bill-wave"></i></div>
+            <div class="report-card-body">
+              <span class="report-card-label">Total Pemasukan</span>
+              <span class="report-card-value" id="rpt-revenue">—</span>
+            </div>
+          </div>
+          <div class="report-card report-card-blue">
+            <div class="report-card-icon"><i class="fas fa-shopping-bag"></i></div>
+            <div class="report-card-body">
+              <span class="report-card-label">Total Order</span>
+              <span class="report-card-value" id="rpt-orders">—</span>
+            </div>
+          </div>
+          <div class="report-card report-card-purple">
+            <div class="report-card-icon"><i class="fas fa-users"></i></div>
+            <div class="report-card-body">
+              <span class="report-card-label">User Aktif</span>
+              <span class="report-card-value" id="rpt-users">—</span>
+            </div>
+          </div>
+          <div class="report-card report-card-orange">
+            <div class="report-card-icon"><i class="fas fa-plus-circle"></i></div>
+            <div class="report-card-body">
+              <span class="report-card-label">Total Top Up</span>
+              <span class="report-card-value" id="rpt-topup">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status Order Breakdown -->
+        <div class="report-row" style="margin-top:1.5rem">
+          <div class="card" style="flex:1">
+            <h3 style="font-size:1rem;font-weight:600;color:var(--gray-800);margin-bottom:1rem">
+              <i class="fas fa-chart-pie" style="color:var(--primary)"></i> Status Order
+            </h3>
+            <div id="rpt-status-breakdown" class="status-breakdown">
+              <div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div>
+            </div>
+          </div>
+
+          <!-- Saldo User Snapshot -->
+          <div class="card" style="flex:1">
+            <h3 style="font-size:1rem;font-weight:600;color:var(--gray-800);margin-bottom:1rem">
+              <i class="fas fa-wallet" style="color:var(--success)"></i> Snapshot Saldo User
+            </h3>
+            <div id="rpt-balance-snapshot" class="status-breakdown">
+              <div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chart Pemasukan Harian -->
+        <div class="card" style="margin-top:1.5rem">
+          <h3 style="font-size:1rem;font-weight:600;color:var(--gray-800);margin-bottom:1.25rem">
+            <i class="fas fa-chart-line" style="color:var(--primary)"></i> Pemasukan Harian
+          </h3>
+          <div id="rpt-chart" class="report-chart-wrapper">
+            <div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div>
+          </div>
+        </div>
+
+        <!-- Top Users & Top Services -->
+        <div class="report-row" style="margin-top:1.5rem">
+          <div class="card" style="flex:1;min-width:0">
+            <h3 style="font-size:1rem;font-weight:600;color:var(--gray-800);margin-bottom:1rem">
+              <i class="fas fa-trophy" style="color:var(--warning)"></i> Top 10 User
+            </h3>
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead><tr><th>#</th><th>Nama</th><th>Orders</th><th>Total Spent</th></tr></thead>
+                <tbody id="rpt-top-users">
+                  <tr><td colspan="4" class="empty-state"><i class="fas fa-spinner fa-spin"></i></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card" style="flex:1;min-width:0">
+            <h3 style="font-size:1rem;font-weight:600;color:var(--gray-800);margin-bottom:1rem">
+              <i class="fas fa-star" style="color:var(--warning)"></i> Top 10 Service
+            </h3>
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead><tr><th>#</th><th>Service</th><th>Orders</th><th>Revenue</th></tr></thead>
+                <tbody id="rpt-top-services">
+                  <tr><td colspan="4" class="empty-state"><i class="fas fa-spinner fa-spin"></i></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
       </div>
 
     </div><!-- end page-content -->

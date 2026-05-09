@@ -426,3 +426,46 @@ img { max-width: 100%; }
 .service-info-provider strong { color: var(--gray-800); }
 .info-sep { color: var(--gray-300); }
 .info-kurs { color: var(--gray-400); font-size: .75rem; }
+
+/* ===== LAPORAN KEUANGAN ===== */
+.report-filter-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.report-period-btns { display: flex; gap: .375rem; flex-wrap: wrap; }
+.period-btn { padding: .5rem 1rem; border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); font-size: .8rem; font-weight: 500; color: var(--gray-600); background: var(--white); cursor: pointer; transition: var(--transition); }
+.period-btn:hover { border-color: var(--primary); color: var(--primary); }
+.period-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+.custom-date-range { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.custom-date-range input[type="date"] { padding: .5rem .75rem; border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); font-size: .875rem; color: var(--gray-700); background: var(--gray-50); }
+.report-period-label { margin-top: .75rem; font-size: .8rem; color: var(--gray-400); }
+
+.report-summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+@media (max-width: 1024px) { .report-summary-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .report-summary-grid { grid-template-columns: 1fr; } }
+
+.report-card { background: var(--white); border-radius: var(--radius); padding: 1.25rem; box-shadow: var(--shadow); border: 1px solid var(--gray-100); display: flex; align-items: center; gap: 1rem; }
+.report-card-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0; }
+.report-card-green .report-card-icon { background: var(--success-light); color: var(--success); }
+.report-card-blue .report-card-icon { background: var(--primary-light); color: var(--primary); }
+.report-card-purple .report-card-icon { background: #f3e8ff; color: #7c3aed; }
+.report-card-orange .report-card-icon { background: #fff7ed; color: #ea580c; }
+.report-card-label { display: block; font-size: .75rem; color: var(--gray-500); font-weight: 500; text-transform: uppercase; letter-spacing: .04em; margin-bottom: .25rem; }
+.report-card-value { display: block; font-size: 1.5rem; font-weight: 700; color: var(--gray-900); }
+
+.report-row { display: flex; gap: 1.5rem; }
+@media (max-width: 768px) { .report-row { flex-direction: column; } }
+
+.status-breakdown { display: flex; flex-direction: column; gap: .625rem; }
+.status-row { display: flex; align-items: center; gap: .75rem; }
+.status-row-label { font-size: .875rem; color: var(--gray-600); width: 100px; flex-shrink: 0; }
+.status-row-bar-wrap { flex: 1; background: var(--gray-100); border-radius: 99px; height: 8px; overflow: hidden; }
+.status-row-bar { height: 100%; border-radius: 99px; transition: width .5s ease; }
+.status-row-val { font-size: .8rem; font-weight: 600; color: var(--gray-700); width: 80px; text-align: right; flex-shrink: 0; }
+
+/* Chart bars */
+.report-chart-wrapper { overflow-x: auto; }
+.report-chart { display: flex; align-items: flex-end; gap: .375rem; height: 180px; padding: 0 .5rem; min-width: 300px; }
+.chart-col { display: flex; flex-direction: column; align-items: center; gap: .25rem; flex: 1; min-width: 28px; }
+.chart-bar { width: 100%; background: var(--primary); border-radius: 4px 4px 0 0; transition: height .4s ease; min-height: 2px; cursor: pointer; position: relative; }
+.chart-bar:hover { background: var(--primary-dark); }
+.chart-bar-tooltip { position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); background: var(--gray-800); color: white; font-size: .7rem; padding: .25rem .5rem; border-radius: 4px; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .2s; z-index: 10; }
+.chart-bar:hover .chart-bar-tooltip { opacity: 1; }
+.chart-date { font-size: .65rem; color: var(--gray-400); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
