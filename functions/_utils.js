@@ -10,19 +10,43 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
+// Security headers ditambahkan ke semua response
+const SECURITY_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+};
+
 export function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...CORS, 'Content-Type': 'application/json' },
+    headers: { ...CORS, ...SECURITY_HEADERS, 'Content-Type': 'application/json' },
   });
 }
 
 export function cors() {
-  return new Response(null, { status: 204, headers: CORS });
+  return new Response(null, { status: 204, headers: { ...CORS, ...SECURITY_HEADERS } });
 }
 
 export function err(message, status = 400) {
   return json({ error: message }, status);
+}
+
+// ── Input sanitization ──
+export function sanitizeString(str, maxLen = 500) {
+  if (typeof str !== 'string') return '';
+  return str.trim().slice(0, maxLen);
+}
+
+export function sanitizeUrl(url) {
+  if (typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  // Hanya izinkan http/https
+  if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) return '';
+  // Batasi panjang
+  if (trimmed.length > 2048) return '';
+  return trimmed;
 }
 
 // ── Password hashing (PBKDF2 via Web Crypto) ──
@@ -92,11 +116,31 @@ export async function verifyJwt(token, secret) {
 }
 
 // ── Auth middleware ──
+// SECURITY: Tolak request jika JWT_SECRET tidak di-set di environment
 export async function requireAuth(request, env) {
+  if (!env.JWT_SECRET) {
+    console.error('SECURITY: JWT_SECRET tidak di-set di environment variables!');
+    return null;
+  }
   const auth = request.headers.get('Authorization') || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
   if (!token) return null;
-  return verifyJwt(token, env.JWT_SECRET || 'change-this-secret');
+  return verifyJwt(token, env.JWT_SECRET);
+}
+
+// ── Rate limiting via Cloudflare KV (opsional, graceful degradation) ──
+// Key: "rl:{ip}:{action}", Value: count, TTL: window seconds
+export async function checkRateLimit(env, ip, action, maxAttempts = 10, windowSec = 900) {
+  if (!env.KV) return true; // KV tidak tersedia, skip rate limiting
+  const key = `rl:${ip}:${action}`;
+  try {
+    const current = parseInt(await env.KV.get(key) || '0');
+    if (current >= maxAttempts) return false; // blocked
+    await env.KV.put(key, String(current + 1), { expirationTtl: windowSec });
+    return true;
+  } catch {
+    return true; // error KV, izinkan request
+  }
 }
 
 // ── Random string ──
@@ -107,13 +151,11 @@ export function randomString(len = 32) {
 }
 
 // ── Kurs USD → IDR real-time ──
-// Menggunakan frankfurter.app (gratis, tanpa API key)
-// Fallback ke nilai dari env atau hardcode jika fetch gagal
 export async function getUsdToIdr(env) {
   const fallback = parseFloat(env?.USD_TO_IDR) || 16300;
   try {
     const res = await fetch('https://api.frankfurter.app/latest?from=USD&to=IDR', {
-      cf: { cacheTtl: 3600, cacheEverything: true }, // cache 1 jam di Cloudflare edge
+      cf: { cacheTtl: 3600, cacheEverything: true },
     });
     if (!res.ok) return fallback;
     const data = await res.json();

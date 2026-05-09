@@ -1,57 +1,70 @@
 /**
  * functions/api/transactions.js
- * GET  /api/transactions  - list user transactions
- * POST /api/transactions  - add funds (admin/payment gateway callback)
+ * GET  /api/transactions  - list user transactions (auth required)
+ * POST /api/transactions  - add funds via webhook (webhook secret required)
+ *
+ * Security:
+ * - GET: hanya bisa lihat transaksi sendiri
+ * - POST: hanya via webhook dengan secret yang valid
+ *   User tidak bisa top up sendiri — hanya admin via /api/admin/users
  */
 import { json, err, cors, requireAuth } from '../_utils.js';
 
 export async function onRequestOptions() { return cors(); }
 
+// GET - list transaksi milik user yang sedang login
 export async function onRequestGet(context) {
   const { request, env } = context;
   const payload = await requireAuth(request, env);
   if (!payload) return err('Unauthorized', 401);
 
   const txns = await env.DB.prepare(
-    'SELECT * FROM transactions WHERE user_id=? ORDER BY created_at DESC LIMIT 50'
+    'SELECT id,type,amount,description,ref_id,created_at FROM transactions WHERE user_id=? ORDER BY created_at DESC LIMIT 50'
   ).bind(payload.sub).all();
 
   return json({ success: true, transactions: txns.results });
 }
 
-// Add funds - in production this would be called by payment gateway webhook
-// Protected by a webhook secret
+// POST - hanya untuk payment gateway webhook
+// User biasa tidak bisa top up sendiri
 export async function onRequestPost(context) {
   const { request, env } = context;
 
-  // Check webhook secret for payment gateway callbacks
+  // SECURITY: Wajib ada WEBHOOK_SECRET di environment
+  if (!env.WEBHOOK_SECRET) return err('Webhook not configured', 503);
+
   const webhookSecret = request.headers.get('X-Webhook-Secret');
-  const isWebhook = webhookSecret && webhookSecret === (env.WEBHOOK_SECRET || '');
+  if (!webhookSecret || webhookSecret !== env.WEBHOOK_SECRET) {
+    return err('Unauthorized', 401);
+  }
 
-  // Or allow authenticated users to add funds (demo/manual top-up)
-  const payload = isWebhook ? null : await requireAuth(request, env);
-  if (!isWebhook && !payload) return err('Unauthorized', 401);
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return err('Invalid JSON body');
+  }
 
-  const body = await request.json();
   const { user_id, amount, description, ref_id } = body;
 
-  const targetUserId = isWebhook ? user_id : payload.sub;
-  if (!targetUserId || !amount || amount <= 0) return err('Invalid request');
+  if (!user_id || !amount) return err('user_id dan amount wajib diisi');
+  const parsedAmount = parseFloat(amount);
+  if (isNaN(parsedAmount) || parsedAmount <= 0) return err('Amount tidak valid');
+  if (parsedAmount > 100_000_000) return err('Amount melebihi batas maksimum'); // max 100 juta
+
+  // Pastikan user ada
+  const user = await env.DB.prepare('SELECT id FROM users WHERE id=?').bind(parseInt(user_id)).first();
+  if (!user) return err('User tidak ditemukan', 404);
 
   await env.DB.batch([
     env.DB.prepare(
       `INSERT INTO transactions (user_id, type, amount, description, ref_id)
        VALUES (?, 'credit', ?, ?, ?)`
-    ).bind(targetUserId, parseFloat(amount), description || 'Deposit', ref_id || null),
-
+    ).bind(parseInt(user_id), parsedAmount, description || 'Deposit', ref_id || null),
     env.DB.prepare(
       `UPDATE users SET balance=balance+?, updated_at=datetime('now') WHERE id=?`
-    ).bind(parseFloat(amount), targetUserId),
+    ).bind(parsedAmount, parseInt(user_id)),
   ]);
 
-  const user = await env.DB.prepare(
-    'SELECT id,name,email,balance FROM users WHERE id=?'
-  ).bind(targetUserId).first();
-
-  return json({ success: true, balance: user.balance });
+  return json({ success: true });
 }

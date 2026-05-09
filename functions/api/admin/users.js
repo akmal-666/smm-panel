@@ -7,7 +7,7 @@
  * PUT    /api/admin/users          - update user (reset password / top up saldo)
  * DELETE /api/admin/users?id=X     - hapus user
  */
-import { json, err, cors, requireAuth, hashPassword, randomString } from '../../_utils.js';
+import { json, err, cors, requireAuth, hashPassword, randomString, sanitizeString } from '../../_utils.js';
 
 export async function onRequestOptions() { return cors(); }
 
@@ -45,9 +45,12 @@ export async function onRequestPost(context) {
   const { name, email, password, balance } = body;
   if (!name || !email || !password) return err('Nama, email, dan password wajib diisi');
   if (password.length < 8) return err('Password minimal 8 karakter');
+  if (typeof email !== 'string' || !email.includes('@') || email.length > 254) return err('Format email tidak valid');
+  const cleanName = sanitizeString(name, 100);
+  const cleanEmail = email.toLowerCase().trim();
 
   // Cek email sudah ada
-  const existing = await env.DB.prepare('SELECT id FROM users WHERE email=?').bind(email.toLowerCase().trim()).first();
+  const existing = await env.DB.prepare('SELECT id FROM users WHERE email=?').bind(cleanEmail).first();
   if (existing) return err('Email sudah terdaftar');
 
   const hashed = await hashPassword(password);
@@ -59,8 +62,8 @@ export async function onRequestPost(context) {
       `INSERT INTO users (name, email, password, balance, api_key, referral_code, role)
        VALUES (?, ?, ?, ?, ?, ?, 'user')`
     ).bind(
-      name.trim(),
-      email.toLowerCase().trim(),
+      cleanName,
+      cleanEmail,
       hashed,
       parseFloat(balance) || 0,
       apiKey,
