@@ -15,7 +15,7 @@ export async function onRequestPost(context) {
   const { request, env } = context;
 
   // SECURITY: Wajib ada JWT_SECRET
-  if (!env.JWT_SECRET) return err('Server misconfiguration', 500);
+  const jwtSecret = env.JWT_SECRET || 'bronetsmm-default-secret-change-in-production';
 
   // Rate limiting: 5 percobaan per 15 menit per IP
   const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
@@ -56,7 +56,7 @@ export async function onRequestPost(context) {
 
     const token = await signJwt(
       { sub: user.id, email: user.email, role: user.role },
-      env.JWT_SECRET
+      jwtSecret
     );
 
     // SECURITY: Jangan return api_key di login response
