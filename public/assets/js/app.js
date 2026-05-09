@@ -109,11 +109,17 @@ async function initDashboard() {
 function updateUserUI() {
   if (!currentUser) return;
   const initials = currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  document.getElementById('sidebar-avatar').textContent = initials;
-  document.getElementById('topbar-avatar').textContent = initials;
-  document.getElementById('sidebar-name').textContent = currentUser.name;
+  // topbar avatar (masih ada)
+  const topbarAvatar = document.getElementById('topbar-avatar');
+  if (topbarAvatar) topbarAvatar.textContent = initials;
+  // sidebar avatar (opsional, mungkin sudah dihapus)
+  const sidebarAvatar = document.getElementById('sidebar-avatar');
+  if (sidebarAvatar) sidebarAvatar.textContent = initials;
+  const sidebarName = document.getElementById('sidebar-name');
+  if (sidebarName) sidebarName.textContent = currentUser.name;
   const firstName = currentUser.name.split(' ')[0];
-  document.getElementById('welcome-title').textContent = 'Welcome ' + firstName + ' \u{1F44B}';
+  const welcomeTitle = document.getElementById('welcome-title');
+  if (welcomeTitle) welcomeTitle.textContent = 'Welcome ' + firstName + ' 👋';
   updateBalanceUI();
 }
 
@@ -148,6 +154,14 @@ function navigateTo(section, el) {
   if (section === 'admin-services') loadAdminServices();
   if (section === 'admin-users') loadUsers();
   return false;
+}
+
+function switchOrderTab(tab, btn) {
+  document.querySelectorAll('.order-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const tabEl = document.getElementById('tab-' + tab);
+  if (tabEl) tabEl.classList.add('active');
 }
 
 function toggleSidebar() {
