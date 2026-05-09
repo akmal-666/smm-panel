@@ -1,14 +1,21 @@
 /**
  * functions/api/orders.js
- * GET  /api/orders        - list user orders
- * POST /api/orders        - place new order
- * GET  /api/orders/[id]   - get single order status
+ * GET  /api/orders  - list order milik user
+ * POST /api/orders  - buat order baru via AsokaPanel
+ *
+ * Catatan harga:
+ * - AsokaPanel mengembalikan harga dalam USD
+ * - Kita simpan charge dalam IDR (sudah dikonversi + markup)
+ * - Balance user juga dalam IDR
  */
 import { json, err, cors, requireAuth } from '../_utils.js';
 
+const USD_TO_IDR = 16300;
+const PRICE_MARKUP = 1.3;
+
 export async function onRequestOptions() { return cors(); }
 
-// GET - list orders
+// GET - list orders milik user
 export async function onRequestGet(context) {
   const { request, env } = context;
   const payload = await requireAuth(request, env);
@@ -21,37 +28,46 @@ export async function onRequestGet(context) {
   return json({ success: true, orders: orders.results });
 }
 
-// POST - place order
+// POST - buat order baru
 export async function onRequestPost(context) {
   const { request, env } = context;
   const payload = await requireAuth(request, env);
   if (!payload) return err('Unauthorized', 401);
 
-  const { service_id, service_name, link, quantity } = await request.json();
-  if (!service_id || !link || !quantity) return err('Missing required fields');
-
-  // Get user balance
-  const user = await env.DB.prepare('SELECT * FROM users WHERE id=?').bind(payload.sub).first();
-  if (!user) return err('User not found', 404);
-
-  // Call provider API
-  const PROVIDER_URL = env.PROVIDER_API_URL;
-  const PROVIDER_KEY = env.PROVIDER_API_KEY;
-
-  if (!PROVIDER_URL || !PROVIDER_KEY) {
-    return err('Provider API not configured', 503);
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return err('Invalid JSON body');
   }
 
+  const { service_id, service_name, link, quantity } = body;
+  if (!service_id || !link || !quantity) return err('Field service_id, link, dan quantity wajib diisi');
+  if (parseInt(quantity) < 1) return err('Quantity tidak valid');
+
+  // Ambil data user
+  const user = await env.DB.prepare('SELECT * FROM users WHERE id=?').bind(payload.sub).first();
+  if (!user) return err('User tidak ditemukan', 404);
+
+  const PROVIDER_URL = env.PROVIDER_API_URL || 'https://asokapanel.com/api/v2';
+  const PROVIDER_KEY = env.PROVIDER_API_KEY;
+
+  if (!PROVIDER_KEY) {
+    return err('Provider API belum dikonfigurasi', 503);
+  }
+
+  // ── Kirim order ke AsokaPanel ──
   let providerOrderId = null;
-  let charge = 0;
+  let chargeUsd = 0;
+  let chargeIdr = 0;
 
   try {
     const formData = new URLSearchParams();
     formData.append('key', PROVIDER_KEY);
     formData.append('action', 'add');
-    formData.append('service', service_id);
+    formData.append('service', String(service_id));
     formData.append('link', link);
-    formData.append('quantity', quantity);
+    formData.append('quantity', String(quantity));
 
     const provRes = await fetch(PROVIDER_URL, {
       method: 'POST',
@@ -60,33 +76,69 @@ export async function onRequestPost(context) {
     });
 
     const provData = await provRes.json();
-    if (provData.error) return err('Provider error: ' + provData.error);
+
+    // AsokaPanel mengembalikan { order: 123, error: "..." }
+    if (provData.error) return err('Provider error: ' + provData.error, 422);
+    if (!provData.order) return err('Provider tidak mengembalikan order ID', 502);
+
     providerOrderId = provData.order;
-    charge = parseFloat(provData.charge || 0);
+
+    // charge dari AsokaPanel dalam USD
+    chargeUsd = parseFloat(provData.charge || 0);
+
+    // Konversi ke IDR + markup
+    const kurs = parseFloat(env.USD_TO_IDR) || USD_TO_IDR;
+    const markup = parseFloat(env.PRICE_MARKUP) || PRICE_MARKUP;
+    chargeIdr = Math.ceil(chargeUsd * kurs * markup / 100) * 100;
+
   } catch (e) {
-    return err('Failed to contact provider: ' + e.message, 502);
+    return err('Gagal menghubungi provider: ' + e.message, 502);
   }
 
-  // Check balance
-  if (user.balance < charge) return err('Insufficient balance');
+  // Cek saldo (dalam IDR)
+  if (user.balance < chargeIdr) {
+    return err(`Saldo tidak cukup. Dibutuhkan Rp ${chargeIdr.toLocaleString('id-ID')}, saldo kamu Rp ${user.balance.toLocaleString('id-ID')}`);
+  }
 
-  // Deduct balance & save order in one transaction
-  await env.DB.batch([
-    env.DB.prepare(
-      `INSERT INTO orders (user_id, provider_order_id, service_id, service_name, link, quantity, charge, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending')`
-    ).bind(payload.sub, String(providerOrderId), String(service_id), service_name || '', link, quantity, charge),
+  // Simpan order + potong saldo dalam 1 batch
+  try {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO orders (user_id, provider_order_id, service_id, service_name, link, quantity, charge, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending')`
+      ).bind(
+        payload.sub,
+        String(providerOrderId),
+        String(service_id),
+        service_name || '',
+        link,
+        parseInt(quantity),
+        chargeIdr
+      ),
 
-    env.DB.prepare(
-      `UPDATE users SET balance=balance-?, total_spent=total_spent+?, total_orders=total_orders+1,
-       updated_at=datetime('now') WHERE id=?`
-    ).bind(charge, charge, payload.sub),
+      env.DB.prepare(
+        `UPDATE users SET balance=balance-?, total_spent=total_spent+?, total_orders=total_orders+1,
+         updated_at=datetime('now') WHERE id=?`
+      ).bind(chargeIdr, chargeIdr, payload.sub),
 
-    env.DB.prepare(
-      `INSERT INTO transactions (user_id, type, amount, description, ref_id)
-       VALUES (?, 'debit', ?, ?, ?)`
-    ).bind(payload.sub, charge, 'Order #' + providerOrderId + ' - ' + (service_name || service_id), String(providerOrderId)),
-  ]);
+      env.DB.prepare(
+        `INSERT INTO transactions (user_id, type, amount, description, ref_id)
+         VALUES (?, 'debit', ?, ?, ?)`
+      ).bind(
+        payload.sub,
+        chargeIdr,
+        'Order #' + providerOrderId + ' - ' + (service_name || 'Service ' + service_id),
+        String(providerOrderId)
+      ),
+    ]);
+  } catch (e) {
+    return err('Gagal menyimpan order: ' + e.message, 500);
+  }
 
-  return json({ success: true, order: providerOrderId, charge }, 201);
+  return json({
+    success: true,
+    order: providerOrderId,
+    charge: chargeIdr,
+    charge_usd: chargeUsd,
+  }, 201);
 }

@@ -98,6 +98,8 @@ const API = {
       method: 'POST',
       body: JSON.stringify({ action: 'services' }),
     });
+    // AsokaPanel mengembalikan array langsung
+    // rate sudah dikonversi ke IDR oleh backend (proxy.js)
     return Array.isArray(data) ? data : [];
   },
 
@@ -160,13 +162,13 @@ const API = {
     if (CONFIG.DEMO_MODE) {
       this.updateUser({ balance: (this.getUser().balance || 0) + amount });
       const txns = await this.getTransactions();
-      txns.unshift({ id: Date.now(), type: 'credit', amount, description: 'Manual deposit', date: new Date().toISOString() });
+      txns.unshift({ id: Date.now(), type: 'credit', amount, description: 'Top-up manual', date: new Date().toISOString() });
       localStorage.setItem('smm_transactions', JSON.stringify(txns.slice(0, 50)));
       return { success: true };
     }
     return this._fetch('/api/transactions', {
       method: 'POST',
-      body: JSON.stringify({ amount, description: 'Deposit' }),
+      body: JSON.stringify({ amount, description: 'Deposit via panel' }),
     });
   },
 

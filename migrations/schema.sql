@@ -1,42 +1,39 @@
--- SMM Panel D1 Database Schema
--- Run: wrangler d1 execute smm-panel-db --file=migrations/schema.sql
-
 CREATE TABLE IF NOT EXISTS users (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  name        TEXT    NOT NULL,
-  email       TEXT    NOT NULL UNIQUE,
-  password    TEXT    NOT NULL,  -- bcrypt hash stored as hex via Web Crypto
-  balance     REAL    NOT NULL DEFAULT 0,
-  total_spent REAL    NOT NULL DEFAULT 0,
-  total_orders INTEGER NOT NULL DEFAULT 0,
-  api_key     TEXT    NOT NULL UNIQUE,
-  referral_code TEXT  NOT NULL UNIQUE,
-  referred_by INTEGER REFERENCES users(id),
-  role        TEXT    NOT NULL DEFAULT 'user',
-  created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
-  updated_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  name          TEXT    NOT NULL,
+  email         TEXT    NOT NULL UNIQUE,
+  password      TEXT    NOT NULL,
+  balance       REAL    NOT NULL DEFAULT 0,
+  total_spent   REAL    NOT NULL DEFAULT 0,
+  total_orders  INTEGER NOT NULL DEFAULT 0,
+  api_key       TEXT    NOT NULL UNIQUE,
+  referral_code TEXT    NOT NULL UNIQUE,
+  referred_by   INTEGER REFERENCES users(id),
+  role          TEXT    NOT NULL DEFAULT 'user',
+  created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+  updated_at    TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS orders (
-  id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id      INTEGER NOT NULL REFERENCES users(id),
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id           INTEGER NOT NULL REFERENCES users(id),
   provider_order_id TEXT,
-  service_id   TEXT    NOT NULL,
-  service_name TEXT,
-  link         TEXT    NOT NULL,
-  quantity     INTEGER NOT NULL,
-  charge       REAL    NOT NULL DEFAULT 0,
-  start_count  INTEGER NOT NULL DEFAULT 0,
-  remains      INTEGER NOT NULL DEFAULT 0,
-  status       TEXT    NOT NULL DEFAULT 'Pending',
-  created_at   TEXT    NOT NULL DEFAULT (datetime('now')),
-  updated_at   TEXT    NOT NULL DEFAULT (datetime('now'))
+  service_id        TEXT    NOT NULL,
+  service_name      TEXT,
+  link              TEXT    NOT NULL,
+  quantity          INTEGER NOT NULL,
+  charge            REAL    NOT NULL DEFAULT 0,
+  start_count       INTEGER NOT NULL DEFAULT 0,
+  remains           INTEGER NOT NULL DEFAULT 0,
+  status            TEXT    NOT NULL DEFAULT 'Pending',
+  created_at        TEXT    NOT NULL DEFAULT (datetime('now')),
+  updated_at        TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS transactions (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id     INTEGER NOT NULL REFERENCES users(id),
-  type        TEXT    NOT NULL,  -- credit | debit
+  type        TEXT    NOT NULL,
   amount      REAL    NOT NULL,
   description TEXT    NOT NULL,
   ref_id      TEXT,

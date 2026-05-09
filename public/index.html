@@ -476,47 +476,50 @@
       <!-- ADD FUNDS PAGE -->
       <div id="page-add-funds" class="page">
         <div class="page-header">
-          <h1>Add Funds</h1>
-          <p>Top up your account balance</p>
+          <h1>Tambah Saldo</h1>
+          <p>Top up saldo akun kamu</p>
         </div>
         <div class="funds-grid">
           <div class="card funds-card">
-            <h3><i class="fas fa-credit-card"></i> Payment Methods</h3>
+            <h3><i class="fas fa-credit-card"></i> Metode Pembayaran</h3>
             <div class="payment-methods">
-              <div class="payment-method active" onclick="selectPayment('crypto')">
-                <i class="fab fa-bitcoin"></i>
-                <span>Crypto</span>
-              </div>
-              <div class="payment-method" onclick="selectPayment('paypal')">
-                <i class="fab fa-paypal"></i>
-                <span>PayPal</span>
+              <div class="payment-method active" onclick="selectPayment('qris')">
+                <i class="fas fa-qrcode"></i>
+                <span>QRIS</span>
               </div>
               <div class="payment-method" onclick="selectPayment('bank')">
                 <i class="fas fa-university"></i>
-                <span>Bank Transfer</span>
+                <span>Transfer Bank</span>
+              </div>
+              <div class="payment-method" onclick="selectPayment('alfamart')">
+                <i class="fas fa-store"></i>
+                <span>Alfamart</span>
               </div>
             </div>
             <div class="form-group" style="margin-top:1.5rem">
-              <label>Amount (USD)</label>
+              <label>Jumlah (IDR)</label>
               <div class="amount-presets">
-                <button class="amount-preset" onclick="setAmount(10)">$10</button>
-                <button class="amount-preset" onclick="setAmount(25)">$25</button>
-                <button class="amount-preset" onclick="setAmount(50)">$50</button>
-                <button class="amount-preset" onclick="setAmount(100)">$100</button>
+                <button class="amount-preset" onclick="setAmount(20000)">Rp 20K</button>
+                <button class="amount-preset" onclick="setAmount(50000)">Rp 50K</button>
+                <button class="amount-preset" onclick="setAmount(100000)">Rp 100K</button>
+                <button class="amount-preset" onclick="setAmount(200000)">Rp 200K</button>
               </div>
               <div class="input-wrapper" style="margin-top:.75rem">
-                <i class="fas fa-dollar-sign"></i>
-                <input type="number" id="fund-amount" placeholder="Enter amount..." min="1" />
+                <i class="fas fa-money-bill-wave"></i>
+                <input type="number" id="fund-amount" placeholder="Masukkan jumlah (min. Rp 10.000)..." min="10000" step="1000" />
               </div>
             </div>
             <button class="btn-primary btn-full" onclick="addFunds()">
-              <i class="fas fa-plus-circle"></i> Add Funds
+              <i class="fas fa-plus-circle"></i> Tambah Saldo
             </button>
+            <p class="form-hint" style="margin-top:.75rem;text-align:center">
+              <i class="fas fa-info-circle"></i> Pembayaran diproses otomatis setelah konfirmasi
+            </p>
           </div>
           <div class="card">
-            <h3><i class="fas fa-history"></i> Transaction History</h3>
+            <h3><i class="fas fa-history"></i> Riwayat Transaksi</h3>
             <div id="transaction-list" class="transaction-list">
-              <div class="empty-state"><i class="fas fa-receipt"></i><br/>No transactions yet</div>
+              <div class="empty-state"><i class="fas fa-receipt"></i><br/>Belum ada transaksi</div>
             </div>
           </div>
         </div>

@@ -5,10 +5,25 @@ pages_build_output_dir = "./public"
 [vars]
 ENVIRONMENT = "production"
 
-# D1 Database binding
-# After creating D1 database, replace DATABASE_ID below:
+# Kurs USD ke IDR (update jika perlu)
+# Bisa di-override via Cloudflare Pages dashboard → Settings → Environment Variables
+USD_TO_IDR = "16300"
+
+# Markup harga dari provider (1.3 = 30% markup di atas harga AsokaPanel)
+PRICE_MARKUP = "1.3"
+
+# ── Variabel RAHASIA — set di Cloudflare Pages dashboard, BUKAN di sini ──
+# Settings → Environment Variables → Add variable
+#
+#   PROVIDER_API_URL  = https://asokapanel.com/api/v2
+#   PROVIDER_API_KEY  = <API key dari dashboard AsokaPanel>
+#   JWT_SECRET        = <random string min 32 karakter>
+#   WEBHOOK_SECRET    = <secret untuk callback payment gateway>
+
+# ── D1 Database binding ──
+# Setelah buat D1 database, ganti database_id di bawah:
 # Run: wrangler d1 create smm-panel-db
-# Then copy the database_id from output
+# Lalu copy database_id dari output
 [[d1_databases]]
 binding = "DB"
 database_name = "smm-panel-db"

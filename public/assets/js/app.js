@@ -229,7 +229,7 @@ function loadServicesByCategory() {
   allServices.filter(s => s.category === cat).forEach(s => {
     const opt = document.createElement('option');
     opt.value = s.service;
-    opt.textContent = s.service + ' | ' + s.name + ' - $' + s.rate + ' per 1000';
+    opt.textContent = s.service + ' | ' + s.name + ' - Rp ' + parseInt(s.rate).toLocaleString('id-ID') + ' per 1000';
     sel.appendChild(opt);
   });
 }
@@ -248,7 +248,7 @@ function onServiceChange() {
   if (!service) return;
   document.getElementById('info-min').textContent = service.min;
   document.getElementById('info-max').textContent = formatNumber(service.max);
-  document.getElementById('info-rate').textContent = '$' + service.rate + '/1K';
+  document.getElementById('info-rate').textContent = formatCurrency(service.rate) + '/1K';
   document.getElementById('service-info').classList.remove('hidden');
   const qtyEl = document.getElementById('order-qty');
   qtyEl.placeholder = 'Min: ' + service.min + ' - Max: ' + formatNumber(service.max);
@@ -268,10 +268,11 @@ function onServiceChange() {
 function calcOrderTotal() {
   const serviceId = document.getElementById('service-select').value;
   const qty = parseInt(document.getElementById('order-qty').value) || 0;
-  if (!serviceId || !qty) { document.getElementById('order-total').textContent = '$0.00'; return; }
+  if (!serviceId || !qty) { document.getElementById('order-total').textContent = 'Rp 0'; return; }
   const service = allServices.find(s => s.service == serviceId);
   if (!service) return;
-  document.getElementById('order-total').textContent = '$' + (parseFloat(service.rate) * qty / 1000).toFixed(4);
+  const total = Math.ceil(parseFloat(service.rate) * qty / 1000);
+  document.getElementById('order-total').textContent = formatCurrency(total);
 }
 
 function estimateTime(service) {
@@ -299,7 +300,7 @@ function renderServicesTable() {
     '<td><strong>#' + s.service + '</strong></td>' +
     '<td>' + escapeHtml(s.name) + '</td>' +
     '<td><span class="status-badge status-processing">' + escapeHtml(s.category) + '</span></td>' +
-    '<td><strong>$' + s.rate + '</strong></td>' +
+    '<td><strong>' + formatCurrency(s.rate) + '</strong></td>' +
     '<td>' + formatNumber(s.min) + '</td>' +
     '<td>' + formatNumber(s.max) + '</td>' +
     '<td><button class="btn-primary" style="padding:.375rem .875rem;font-size:.75rem" onclick="orderService(' + s.service + ')"><i class="fas fa-cart-plus"></i> Order</button></td>' +
@@ -335,9 +336,9 @@ async function placeOrder() {
   if (service) {
     if (qty < service.min) return showToast('warning', 'Invalid Quantity', 'Minimum is ' + service.min);
     if (qty > service.max) return showToast('warning', 'Invalid Quantity', 'Maximum is ' + formatNumber(service.max));
-    const total = parseFloat(service.rate) * qty / 1000;
+    const total = Math.ceil(parseFloat(service.rate) * qty / 1000);
     if (currentUser && total > currentUser.balance) {
-      return showToast('error', 'Insufficient Balance', 'You need $' + total.toFixed(4) + ' but have $' + currentUser.balance.toFixed(2));
+      return showToast('error', 'Saldo Tidak Cukup', 'Dibutuhkan ' + formatCurrency(total) + ' tapi saldo kamu ' + formatCurrency(currentUser.balance));
     }
   }
   showLoading(true);
@@ -412,7 +413,7 @@ function renderOrdersTable(orders) {
       '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + escapeHtml(sName) + '">' + escapeHtml(sName) + '</td>' +
       '<td class="link-cell"><a href="' + escapeHtml(o.link) + '" target="_blank" rel="noopener">' + escapeHtml(o.link) + '</a></td>' +
       '<td>' + formatNumber(o.quantity) + '</td>' +
-      '<td><strong>$' + parseFloat(o.charge || 0).toFixed(4) + '</strong></td>' +
+      '<td><strong>' + formatCurrency(o.charge || 0) + '</strong></td>' +
       '<td>' + formatNumber(o.start_count || 0) + '</td>' +
       '<td>' + formatNumber(o.remains || 0) + '</td>' +
       '<td><span class="status-badge status-' + status + '">' + (o.status || 'Pending') + '</span></td>' +
@@ -450,7 +451,7 @@ async function searchOrder() {
         '<div class="result-row"><span class="result-label">Start Count</span><span class="result-value">' + formatNumber(res.start_count || 0) + '</span></div>' +
         '<div class="result-row"><span class="result-label">Remains</span><span class="result-value">' + formatNumber(res.remains || 0) + '</span></div>' +
         '<div class="result-row"><span class="result-label">Status</span><span class="result-value"><span class="status-badge status-' + status + '">' + res.status + '</span></span></div>' +
-        '<div class="result-row"><span class="result-label">Charge</span><span class="result-value">$' + parseFloat(res.charge || 0).toFixed(4) + '</span></div>';
+        '<div class="result-row"><span class="result-label">Charge</span><span class="result-value">' + formatCurrency(res.charge || 0) + '</span></div>';
     }
   } catch (e) {
     showToast('error', 'Error', 'Failed to fetch order status');
@@ -471,7 +472,7 @@ function setAmount(amount) {
 
 async function addFunds() {
   const amount = parseFloat(document.getElementById('fund-amount').value);
-  if (!amount || amount < CONFIG.MIN_DEPOSIT) return showToast('warning', 'Invalid Amount', 'Minimum deposit is $' + CONFIG.MIN_DEPOSIT);
+  if (!amount || amount < CONFIG.MIN_DEPOSIT) return showToast('warning', 'Jumlah Tidak Valid', 'Minimum deposit adalah ' + formatCurrency(CONFIG.MIN_DEPOSIT));
   showLoading(true);
   try {
     const res = await API.addFunds(amount);
@@ -481,7 +482,7 @@ async function addFunds() {
       updateBalanceUI();
       loadTransactions();
       document.getElementById('fund-amount').value = '';
-      showToast('success', 'Funds Added!', '$' + amount.toFixed(2) + ' added to your balance');
+      showToast('success', 'Saldo Ditambahkan!', formatCurrency(amount) + ' berhasil ditambahkan ke saldo kamu');
     } else {
       showToast('error', 'Failed', res.error || 'Could not add funds');
     }
@@ -505,7 +506,7 @@ async function loadTransactions() {
       '<div class="transaction-item">' +
       '<div class="transaction-icon ' + t.type + '"><i class="fas fa-' + (t.type === 'credit' ? 'arrow-down' : 'arrow-up') + '"></i></div>' +
       '<div class="transaction-info"><strong>' + escapeHtml(t.description) + '</strong><span>' + formatDate(t.date || t.created_at) + '</span></div>' +
-      '<span class="transaction-amount ' + t.type + '">' + (t.type === 'credit' ? '+' : '-') + '$' + parseFloat(t.amount).toFixed(2) + '</span>' +
+      '<span class="transaction-amount ' + t.type + '">' + (t.type === 'credit' ? '+' : '-') + formatCurrency(t.amount) + '</span>' +
       '</div>'
     ).join('');
   } catch(e) {
@@ -586,6 +587,9 @@ function togglePassword(inputId) {
 }
 
 function formatCurrency(amount) {
+  if (CONFIG.CURRENCY === 'IDR') {
+    return 'Rp ' + parseInt(amount || 0).toLocaleString('id-ID');
+  }
   return CONFIG.CURRENCY_SYMBOL + parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
