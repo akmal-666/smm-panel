@@ -56,10 +56,10 @@ async function handleLogin(e) {
     const res = await API.login(email, password);
     if (res.success) {
       currentUser = res.user;
-      showToast('success', 'Welcome back!', 'Hello, ' + currentUser.name + ' \u{1F44B}');
+      showToast('success', 'Welcome back!', 'Hello, ' + currentUser.name + ' 👋');
       setTimeout(() => showDashboard(), 500);
     } else {
-      showToast('error', 'Login Failed', res.message || 'Invalid credentials');
+      showToast('error', 'Login Gagal', res.error || res.message || 'Email atau password salah');
     }
   } catch (err) {
     showToast('error', 'Error', 'Something went wrong. Please try again.');
