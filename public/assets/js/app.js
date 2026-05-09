@@ -820,7 +820,7 @@ function renderAdminActiveTable() {
     const activeLabel = s.is_active ? '✅ Aktif' : '❌ Nonaktif';
     return '<tr>' +
       '<td><strong>' + escapeHtml(String(s.service_id)) + '</strong></td>' +
-      '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + escapeHtml(s.name) + '">' + escapeHtml(s.name) + '</td>' +
+      '<td style="word-break:break-word;white-space:normal">' + escapeHtml(s.name) + '</td>' +
       '<td><span class="status-badge status-processing">' + escapeHtml(s.category) + '</span></td>' +
       '<td><strong>' + formatCurrency(s.rate) + '</strong></td>' +
       '<td>' + formatNumber(s.min_order) + '</td>' +
@@ -891,7 +891,7 @@ function renderProviderTable() {
         '</button>';
     return '<tr>' +
       '<td><strong>' + escapeHtml(String(s.service)) + '</strong></td>' +
-      '<td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + escapeHtml(s.name) + '">' + escapeHtml(s.name) + '</td>' +
+      '<td style="word-break:break-word;white-space:normal">' + escapeHtml(s.name) + '</td>' +
       '<td><span class="status-badge status-processing">' + escapeHtml(s.category) + '</span></td>' +
       '<td>' + formatCurrency(s.rate_default_idr || 0) + '<br/><small style="color:var(--gray-400)">$' + parseFloat(s.rate_provider_usd || 0).toFixed(4) + '/1K</small></td>' +
       '<td>' + statusBadge + '</td>' +
