@@ -115,13 +115,12 @@ function updateUserUI() {
 
 function updateBalanceUI() {
   if (!currentUser) return;
-  const bal = formatCurrency(currentUser.balance || 0);
   const spent = formatCurrency(currentUser.total_spent || 0);
   const orders = currentUser.total_orders || 0;
-  document.getElementById('stat-balance').textContent = bal;
+  const statBalance = document.getElementById('stat-balance');
+  if (statBalance) statBalance.textContent = formatCurrency(currentUser.balance || 0);
   document.getElementById('stat-spent').textContent = spent;
   document.getElementById('stat-orders').textContent = orders;
-  document.getElementById('topbar-balance').textContent = bal;
 }
 
 // NAVIGATION
