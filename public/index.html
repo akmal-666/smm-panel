@@ -236,9 +236,13 @@
                   <span><i class="fas fa-dollar-sign"></i> Rate: <strong id="info-rate">-</strong></span>
                 </div>
               </div>
-              <div class="form-group">
-                <label>Link</label>
-                <input type="url" id="order-link" placeholder="Insert your link here..." />
+              <div class="form-group" id="link-group">
+                <label id="link-label">Link</label>
+                <div class="link-input-wrapper">
+                  <span class="link-prefix hidden" id="link-prefix"></span>
+                  <input type="text" id="order-link" placeholder="Masukkan link lengkap..." />
+                </div>
+                <div class="form-hint" id="link-hint"></div>
               </div>
               <div class="form-group">
                 <label>Quantity</label>

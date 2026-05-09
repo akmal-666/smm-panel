@@ -212,6 +212,7 @@ function loadServicesByCategory() {
   const placeholder = document.querySelector('.service-detail-placeholder');
   if (detailContent) detailContent.classList.add('hidden');
   if (placeholder) placeholder.classList.remove('hidden');
+  resetLinkInput();
   if (!cat) return;
   allServices.filter(s => s.category === cat).forEach(s => {
     const opt = document.createElement('option');
@@ -229,6 +230,7 @@ function onServiceChange() {
     document.getElementById('service-info').classList.add('hidden');
     if (detailContent) detailContent.classList.add('hidden');
     if (placeholder) placeholder.classList.remove('hidden');
+    resetLinkInput();
     return;
   }
   const service = allServices.find(s => s.service == serviceId);
@@ -249,7 +251,167 @@ function onServiceChange() {
     document.getElementById('detail-id').textContent = service.service;
     document.getElementById('detail-time').textContent = estimateTime(service);
   }
+  // Update smart link input
+  updateLinkInput(service);
   calcOrderTotal();
+}
+
+// ── SMART LINK INPUT ──
+// Mapping kategori + keyword → prefix URL dan label input
+const LINK_CONFIGS = {
+  // Instagram
+  'instagram': {
+    default:  { prefix: 'https://instagram.com/', label: 'Username Instagram', placeholder: 'contoh: bkhrakmal' },
+    post:     { prefix: 'https://instagram.com/p/', label: 'Link Post Instagram', placeholder: 'contoh: ABC123xyz' },
+    reel:     { prefix: 'https://instagram.com/reel/', label: 'Link Reel Instagram', placeholder: 'contoh: ABC123xyz' },
+    story:    { prefix: 'https://instagram.com/', label: 'Username Instagram', placeholder: 'contoh: bkhrakmal' },
+    tv:       { prefix: 'https://instagram.com/tv/', label: 'Link IGTV', placeholder: 'contoh: ABC123xyz' },
+    comment:  { prefix: 'https://instagram.com/p/', label: 'Link Post Instagram', placeholder: 'contoh: ABC123xyz' },
+    like:     { prefix: 'https://instagram.com/p/', label: 'Link Post Instagram', placeholder: 'contoh: ABC123xyz' },
+    view:     { prefix: 'https://instagram.com/p/', label: 'Link Post/Reel', placeholder: 'contoh: ABC123xyz' },
+    save:     { prefix: 'https://instagram.com/p/', label: 'Link Post Instagram', placeholder: 'contoh: ABC123xyz' },
+    impression: { prefix: 'https://instagram.com/p/', label: 'Link Post Instagram', placeholder: 'contoh: ABC123xyz' },
+  },
+  // TikTok
+  'tiktok': {
+    default:  { prefix: 'https://tiktok.com/@', label: 'Username TikTok', placeholder: 'contoh: bkhrakmal' },
+    video:    { prefix: 'https://tiktok.com/@user/video/', label: 'Link Video TikTok', placeholder: 'contoh: 7123456789' },
+    like:     { prefix: 'https://tiktok.com/@user/video/', label: 'Link Video TikTok', placeholder: 'contoh: 7123456789' },
+    view:     { prefix: 'https://tiktok.com/@user/video/', label: 'Link Video TikTok', placeholder: 'contoh: 7123456789' },
+    comment:  { prefix: 'https://tiktok.com/@user/video/', label: 'Link Video TikTok', placeholder: 'contoh: 7123456789' },
+    share:    { prefix: 'https://tiktok.com/@user/video/', label: 'Link Video TikTok', placeholder: 'contoh: 7123456789' },
+    live:     { prefix: 'https://tiktok.com/@', label: 'Username TikTok', placeholder: 'contoh: bkhrakmal' },
+  },
+  // YouTube
+  'youtube': {
+    default:  { prefix: 'https://youtube.com/channel/', label: 'Channel ID / URL', placeholder: 'contoh: UCxxxxxx atau @channelname' },
+    video:    { prefix: 'https://youtube.com/watch?v=', label: 'Video ID YouTube', placeholder: 'contoh: dQw4w9WgXcQ' },
+    view:     { prefix: 'https://youtube.com/watch?v=', label: 'Video ID YouTube', placeholder: 'contoh: dQw4w9WgXcQ' },
+    like:     { prefix: 'https://youtube.com/watch?v=', label: 'Video ID YouTube', placeholder: 'contoh: dQw4w9WgXcQ' },
+    comment:  { prefix: 'https://youtube.com/watch?v=', label: 'Video ID YouTube', placeholder: 'contoh: dQw4w9WgXcQ' },
+    subscriber: { prefix: 'https://youtube.com/@', label: 'Channel YouTube', placeholder: 'contoh: channelname' },
+    sub:      { prefix: 'https://youtube.com/@', label: 'Channel YouTube', placeholder: 'contoh: channelname' },
+    hour:     { prefix: 'https://youtube.com/watch?v=', label: 'Video ID YouTube', placeholder: 'contoh: dQw4w9WgXcQ' },
+  },
+  // Facebook
+  'facebook': {
+    default:  { prefix: 'https://facebook.com/', label: 'Username / Page Facebook', placeholder: 'contoh: namapage' },
+    post:     { prefix: 'https://facebook.com/', label: 'Link Post Facebook', placeholder: 'contoh: namapage/posts/123' },
+    like:     { prefix: 'https://facebook.com/', label: 'Link Post / Page Facebook', placeholder: 'contoh: namapage' },
+    video:    { prefix: 'https://facebook.com/', label: 'Link Video Facebook', placeholder: 'contoh: namapage/videos/123' },
+    comment:  { prefix: 'https://facebook.com/', label: 'Link Post Facebook', placeholder: 'contoh: namapage/posts/123' },
+    share:    { prefix: 'https://facebook.com/', label: 'Link Post Facebook', placeholder: 'contoh: namapage/posts/123' },
+  },
+  // Twitter/X
+  'twitter': {
+    default:  { prefix: 'https://x.com/', label: 'Username Twitter/X', placeholder: 'contoh: elonmusk' },
+    tweet:    { prefix: 'https://x.com/i/status/', label: 'Tweet ID', placeholder: 'contoh: 1234567890' },
+    like:     { prefix: 'https://x.com/i/status/', label: 'Tweet ID', placeholder: 'contoh: 1234567890' },
+    retweet:  { prefix: 'https://x.com/i/status/', label: 'Tweet ID', placeholder: 'contoh: 1234567890' },
+    reply:    { prefix: 'https://x.com/i/status/', label: 'Tweet ID', placeholder: 'contoh: 1234567890' },
+  },
+  // Spotify
+  'spotify': {
+    default:  { prefix: 'https://open.spotify.com/track/', label: 'Track ID Spotify', placeholder: 'contoh: 4uLU6hMCjMI75M1A2tKUQC' },
+    play:     { prefix: 'https://open.spotify.com/track/', label: 'Track ID Spotify', placeholder: 'contoh: 4uLU6hMCjMI75M1A2tKUQC' },
+    follower: { prefix: 'https://open.spotify.com/artist/', label: 'Artist ID Spotify', placeholder: 'contoh: 0TnOYISbd1XYRBk9myaseg' },
+    playlist: { prefix: 'https://open.spotify.com/playlist/', label: 'Playlist ID Spotify', placeholder: 'contoh: 37i9dQZF1DXcBWIGoYBM5M' },
+  },
+  // Telegram
+  'telegram': {
+    default:  { prefix: 'https://t.me/', label: 'Username Telegram', placeholder: 'contoh: namagroup' },
+    member:   { prefix: 'https://t.me/', label: 'Username Channel/Group', placeholder: 'contoh: namagroup' },
+    view:     { prefix: 'https://t.me/', label: 'Link Post Telegram', placeholder: 'contoh: namagroup/123' },
+    reaction: { prefix: 'https://t.me/', label: 'Link Post Telegram', placeholder: 'contoh: namagroup/123' },
+  },
+  // Threads
+  'threads': {
+    default:  { prefix: 'https://threads.net/@', label: 'Username Threads', placeholder: 'contoh: bkhrakmal' },
+  },
+  // LinkedIn
+  'linkedin': {
+    default:  { prefix: 'https://linkedin.com/in/', label: 'Profile LinkedIn', placeholder: 'contoh: namaprofile' },
+  },
+};
+
+function getLinkConfig(service) {
+  const cat = (service.category || '').toLowerCase();
+  const name = (service.name || '').toLowerCase();
+
+  // Cari platform yang cocok
+  let platformKey = null;
+  for (const key of Object.keys(LINK_CONFIGS)) {
+    if (cat.includes(key) || name.includes(key)) {
+      platformKey = key;
+      break;
+    }
+  }
+  if (!platformKey) return null;
+
+  const configs = LINK_CONFIGS[platformKey];
+
+  // Cari tipe yang cocok berdasarkan nama service
+  for (const [type, cfg] of Object.entries(configs)) {
+    if (type === 'default') continue;
+    if (name.includes(type)) return cfg;
+  }
+
+  return configs.default;
+}
+
+function updateLinkInput(service) {
+  const cfg = getLinkConfig(service);
+  const prefixEl = document.getElementById('link-prefix');
+  const inputEl = document.getElementById('order-link');
+  const labelEl = document.getElementById('link-label');
+  const hintEl = document.getElementById('link-hint');
+
+  // Reset value saat ganti service
+  inputEl.value = '';
+
+  if (cfg) {
+    prefixEl.textContent = cfg.prefix;
+    prefixEl.classList.remove('hidden');
+    inputEl.placeholder = cfg.placeholder;
+    inputEl.type = 'text';
+    labelEl.textContent = cfg.label;
+    hintEl.textContent = 'URL lengkap: ' + cfg.prefix + cfg.placeholder.replace('contoh: ', '');
+  } else {
+    // Fallback: input URL lengkap
+    prefixEl.classList.add('hidden');
+    prefixEl.textContent = '';
+    inputEl.placeholder = 'Masukkan URL lengkap...';
+    inputEl.type = 'url';
+    labelEl.textContent = 'Link';
+    hintEl.textContent = '';
+  }
+}
+
+function resetLinkInput() {
+  const prefixEl = document.getElementById('link-prefix');
+  const inputEl = document.getElementById('order-link');
+  const labelEl = document.getElementById('link-label');
+  const hintEl = document.getElementById('link-hint');
+  prefixEl.classList.add('hidden');
+  prefixEl.textContent = '';
+  inputEl.value = '';
+  inputEl.placeholder = 'Masukkan link lengkap...';
+  inputEl.type = 'text';
+  labelEl.textContent = 'Link';
+  hintEl.textContent = '';
+}
+
+function getFullLink() {
+  const prefixEl = document.getElementById('link-prefix');
+  const inputEl = document.getElementById('order-link');
+  const val = inputEl.value.trim();
+  if (!val) return '';
+  // Kalau user sudah input URL lengkap (mulai http), pakai langsung
+  if (val.startsWith('http://') || val.startsWith('https://')) return val;
+  // Kalau prefix tersembunyi, return as-is
+  if (prefixEl.classList.contains('hidden')) return val;
+  // Gabungkan prefix + input
+  return prefixEl.textContent + val;
 }
 
 function calcOrderTotal() {
@@ -314,7 +476,7 @@ function orderService(serviceId) {
 // ORDERS
 async function placeOrder() {
   const serviceId = document.getElementById('service-select').value;
-  const link = document.getElementById('order-link').value.trim();
+  const link = getFullLink();
   const qty = parseInt(document.getElementById('order-qty').value);
   if (!serviceId) return showToast('warning', 'Missing Field', 'Please choose a service');
   if (!link) return showToast('warning', 'Missing Field', 'Please enter a link');
@@ -334,10 +496,10 @@ async function placeOrder() {
     if (res.order) {
       currentUser = API.getUser();
       updateBalanceUI();
-      showToast('success', 'Order Placed! \u{1F389}', 'Order #' + res.order + ' has been submitted');
+      showToast('success', 'Order Placed! 🎉', 'Order #' + res.order + ' has been submitted');
       document.getElementById('order-link').value = '';
       document.getElementById('order-qty').value = '';
-      document.getElementById('order-total').textContent = '$0.00';
+      document.getElementById('order-total').textContent = 'Rp 0';
     } else {
       showToast('error', 'Order Failed', res.error || 'Could not place order');
     }
