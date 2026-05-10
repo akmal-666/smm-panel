@@ -665,6 +665,25 @@ function renderOrdersTable(orders) {
   }).join('');
 }
 
+// Sync semua order aktif dari AsokaPanel (admin only)
+async function syncAllOrders() {
+  const btn = document.getElementById('btn-sync-orders');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...'; }
+  try {
+    const res = await API._fetch('/api/admin/sync', { method: 'POST' });
+    if (res.success) {
+      showToast('success', 'Sync Selesai', res.message);
+      await loadOrders();
+    } else {
+      showToast('error', 'Sync Gagal', res.error || 'Terjadi kesalahan');
+    }
+  } catch (e) {
+    showToast('error', 'Error', e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-cloud-download-alt"></i> Sync Status'; }
+  }
+}
+
 // Sync status realtime dari AsokaPanel untuk semua order yang belum selesai
 async function syncOrderStatuses() {
   if (CONFIG.DEMO_MODE) return;

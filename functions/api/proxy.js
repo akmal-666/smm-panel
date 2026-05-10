@@ -180,18 +180,43 @@ export async function onRequestPost(context) {
   }
 
   // Sync status order ke D1
-  if (action === 'status' && order && data && data.status && env.DB) {
+  if (action === 'status' && env.DB) {
     try {
-      await env.DB.prepare(
-        `UPDATE orders SET status=?, start_count=?, remains=?, updated_at=datetime('now')
-         WHERE provider_order_id=? AND user_id=?`
-      ).bind(
-        data.status,
-        parseInt(data.start_count) || 0,
-        parseInt(data.remains) || 0,
-        String(order),
-        payload.sub
-      ).run();
+      // Single order
+      if (order && data && data.status) {
+        await env.DB.prepare(
+          `UPDATE orders SET status=?, start_count=?, remains=?, updated_at=datetime('now')
+           WHERE provider_order_id=? AND user_id=?`
+        ).bind(
+          data.status,
+          parseInt(data.start_count) || 0,
+          parseInt(data.remains) || 0,
+          String(order),
+          payload.sub
+        ).run();
+      }
+
+      // Multiple orders — data = { "orderId": { status, start_count, remains }, ... }
+      if (orders && typeof data === 'object' && !data.status) {
+        const updates = [];
+        for (const [orderId, info] of Object.entries(data)) {
+          if (info && info.status && !info.error) {
+            updates.push(
+              env.DB.prepare(
+                `UPDATE orders SET status=?, start_count=?, remains=?, updated_at=datetime('now')
+                 WHERE provider_order_id=? AND user_id=?`
+              ).bind(
+                info.status,
+                parseInt(info.start_count) || 0,
+                parseInt(info.remains) || 0,
+                String(orderId),
+                payload.sub
+              )
+            );
+          }
+        }
+        if (updates.length > 0) await env.DB.batch(updates);
+      }
     } catch (_) { /* non-fatal */ }
   }
 
