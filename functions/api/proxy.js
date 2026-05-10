@@ -125,7 +125,11 @@ export async function onRequestPost(context) {
 
     const merged = providerServices.map(s => {
       const local = localMap[String(s.service)];
-      const defaultRate = Math.ceil(parseFloat(s.rate) * kurs * markup) * 100;
+      const rateUsd = parseFloat(s.rate) || 0;
+      // rate AsokaPanel = USD per 1000 unit
+      // Konversi: rateUsd * kurs = IDR per 1000 unit
+      // Bulatkan ke kelipatan 10
+      const defaultRate = Math.ceil(rateUsd * kurs / 10) * 10;
       return {
         service: s.service,
         name: s.name,
