@@ -104,6 +104,16 @@ async function initDashboard() {
   await loadServices();
   loadOrders();
   updateApiKey();
+
+  // Auto-refresh saldo setiap 60 detik
+  if (!CONFIG.DEMO_MODE) {
+    setInterval(async () => {
+      try {
+        currentUser = await API.refreshUser();
+        updateBalanceUI();
+      } catch { /* silent */ }
+    }, 60000);
+  }
 }
 
 function updateUserUI() {
@@ -519,10 +529,11 @@ async function placeOrder() {
   showLoading(true);
   try {
     const res = await API.placeOrder(serviceId, link, qty, service ? service.name : '');
-    if (res.order) {
-      currentUser = API.getUser();
+    if (res.order || res.success) {
+      // Refresh dari server agar saldo akurat
+      try { currentUser = await API.refreshUser(); } catch { currentUser = API.getUser(); }
       updateBalanceUI();
-      showToast('success', 'Order Placed! 🎉', 'Order #' + res.order + ' has been submitted');
+      showToast('success', 'Order Placed! 🎉', 'Order #' + res.order + ' berhasil dikirim');
       document.getElementById('order-link').value = '';
       document.getElementById('order-qty').value = '';
       document.getElementById('order-total').textContent = 'Rp 0';
@@ -555,7 +566,8 @@ async function placeBulkOrder() {
     } catch { failed++; }
   }
   showLoading(false);
-  currentUser = API.getUser();
+  // Refresh dari server setelah bulk order
+  try { currentUser = await API.refreshUser(); } catch { currentUser = API.getUser(); }
   updateBalanceUI();
   showToast('success', 'Bulk Order Done', success + ' placed, ' + failed + ' failed');
   if (success > 0) document.getElementById('bulk-input').value = '';
