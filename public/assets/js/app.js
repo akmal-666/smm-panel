@@ -568,8 +568,60 @@ async function loadOrders() {
   try {
     allOrders = await API.getOrders();
     renderOrdersTable(allOrders);
+    // Setelah render, fetch status realtime dari AsokaPanel untuk order yang aktif
+    syncOrderStatuses();
   } catch (e) {
     tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="fas fa-exclamation-circle"></i><br/>Failed to load orders</td></tr>';
+  }
+}
+
+// Extract username/ID yang mudah dibaca dari URL
+function extractTarget(link) {
+  if (!link) return '-';
+  try {
+    const url = new URL(link);
+    const host = url.hostname.replace('www.', '');
+    const path = url.pathname.replace(/\/$/, '');
+
+    // Instagram: /username atau /p/postid atau /reel/id
+    if (host.includes('instagram.com')) {
+      const parts = path.split('/').filter(Boolean);
+      if (parts[0] === 'p' || parts[0] === 'reel' || parts[0] === 'tv') return parts[0] + '/' + (parts[1] || '');
+      return '@' + (parts[0] || path);
+    }
+    // TikTok: /@username atau /@user/video/id
+    if (host.includes('tiktok.com')) {
+      const parts = path.split('/').filter(Boolean);
+      if (parts[1] === 'video') return '@' + parts[0].replace('@','') + '/video/' + (parts[2] || '');
+      return parts[0] || path;
+    }
+    // YouTube: /watch?v=id atau /@channel
+    if (host.includes('youtube.com')) {
+      if (url.searchParams.get('v')) return 'video/' + url.searchParams.get('v');
+      const parts = path.split('/').filter(Boolean);
+      return parts[0] || path;
+    }
+    // Twitter/X
+    if (host.includes('x.com') || host.includes('twitter.com')) {
+      const parts = path.split('/').filter(Boolean);
+      if (parts[1] === 'status') return '@' + parts[0] + '/status/' + (parts[2] || '');
+      return '@' + (parts[0] || path);
+    }
+    // Telegram
+    if (host.includes('t.me')) {
+      return path.replace('/', '') || path;
+    }
+    // Spotify
+    if (host.includes('spotify.com')) {
+      const parts = path.split('/').filter(Boolean);
+      return parts.slice(-2).join('/');
+    }
+    // Default: ambil path terakhir
+    const parts = path.split('/').filter(Boolean);
+    return parts[parts.length - 1] || link;
+  } catch {
+    // Bukan URL valid, return as-is (mungkin sudah username)
+    return link.length > 30 ? link.slice(0, 30) + '…' : link;
   }
 }
 
@@ -580,27 +632,81 @@ function renderOrdersTable(orders) {
     return;
   }
   tbody.innerHTML = orders.map(o => {
-    const service = allServices.find(s => s.service == o.service);
-    const sName = service ? service.name : 'Service #' + o.service;
+    // DB fields: id, provider_order_id, service_id, service_name, link, quantity, charge, start_count, remains, status
+    const orderId = o.provider_order_id || o.id || '-';
+    const sName = o.service_name || (allServices.find(s => s.service == o.service_id)?.name) || 'Service #' + (o.service_id || '-');
     const status = (o.status || 'pending').toLowerCase();
+    const target = extractTarget(o.link);
+    const startId = 'start-' + (o.provider_order_id || o.id);
+    const remainsId = 'remains-' + (o.provider_order_id || o.id);
+    const statusId = 'status-' + (o.provider_order_id || o.id);
     return '<tr>' +
-      '<td><strong>#' + o.order + '</strong></td>' +
-      '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + escapeHtml(sName) + '">' + escapeHtml(sName) + '</td>' +
-      '<td class="link-cell"><a href="' + escapeHtml(o.link) + '" target="_blank" rel="noopener">' + escapeHtml(o.link) + '</a></td>' +
+      '<td><strong>#' + escapeHtml(String(orderId)) + '</strong></td>' +
+      '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + escapeHtml(sName) + '">' + escapeHtml(sName) + '</td>' +
+      '<td><span class="target-cell" title="' + escapeHtml(o.link || '') + '">' + escapeHtml(target) + '</span></td>' +
       '<td>' + formatNumber(o.quantity) + '</td>' +
       '<td><strong>' + formatCurrency(o.charge || 0) + '</strong></td>' +
-      '<td>' + formatNumber(o.start_count || 0) + '</td>' +
-      '<td>' + formatNumber(o.remains || 0) + '</td>' +
-      '<td><span class="status-badge status-' + status + '">' + (o.status || 'Pending') + '</span></td>' +
+      '<td id="' + startId + '">' + formatNumber(o.start_count || 0) + '</td>' +
+      '<td id="' + remainsId + '">' + formatNumber(o.remains || 0) + '</td>' +
+      '<td id="' + statusId + '"><span class="status-badge status-' + status + '">' + (o.status || 'Pending') + '</span></td>' +
       '</tr>';
   }).join('');
+}
+
+// Sync status realtime dari AsokaPanel untuk semua order yang belum selesai
+async function syncOrderStatuses() {
+  if (CONFIG.DEMO_MODE) return;
+  // Ambil order yang perlu di-sync (bukan Completed/Cancelled)
+  const activeOrders = allOrders.filter(o =>
+    o.provider_order_id &&
+    !['completed', 'cancelled', 'partial'].includes((o.status || '').toLowerCase())
+  );
+  if (!activeOrders.length) return;
+
+  // Batch max 100 order IDs sekaligus
+  const ids = activeOrders.map(o => o.provider_order_id).slice(0, 100);
+  try {
+    const res = await API._fetch('/api/proxy', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'status', orders: ids }),
+    });
+    if (!res || res.error) return;
+
+    // Update DOM langsung tanpa re-render seluruh tabel
+    for (const [orderId, data] of Object.entries(res)) {
+      if (data.error) continue;
+      const startEl = document.getElementById('start-' + orderId);
+      const remainsEl = document.getElementById('remains-' + orderId);
+      const statusEl = document.getElementById('status-' + orderId);
+      if (startEl) startEl.textContent = formatNumber(data.start_count || 0);
+      if (remainsEl) remainsEl.textContent = formatNumber(data.remains || 0);
+      if (statusEl) {
+        const st = (data.status || 'Pending').toLowerCase();
+        statusEl.innerHTML = '<span class="status-badge status-' + st + '">' + (data.status || 'Pending') + '</span>';
+      }
+      // Update data lokal juga
+      const order = allOrders.find(o => o.provider_order_id == orderId);
+      if (order) {
+        order.start_count = data.start_count || 0;
+        order.remains = data.remains || 0;
+        order.status = data.status || order.status;
+      }
+    }
+  } catch (e) {
+    // Silent fail — data dari DB tetap tampil
+  }
 }
 
 function filterOrders() {
   const search = document.getElementById('orders-search').value.toLowerCase();
   const status = document.getElementById('orders-filter').value.toLowerCase();
   let filtered = allOrders;
-  if (search) filtered = filtered.filter(o => String(o.order).includes(search) || String(o.service).includes(search) || (o.link || '').toLowerCase().includes(search));
+  if (search) filtered = filtered.filter(o =>
+    String(o.provider_order_id || o.id || '').includes(search) ||
+    String(o.service_id || '').includes(search) ||
+    (o.service_name || '').toLowerCase().includes(search) ||
+    (o.link || '').toLowerCase().includes(search)
+  );
   if (status) filtered = filtered.filter(o => (o.status || '').toLowerCase() === status);
   renderOrdersTable(filtered);
 }
