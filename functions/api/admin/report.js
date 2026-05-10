@@ -55,8 +55,11 @@ export async function onRequestGet(context) {
     }
   }
 
-  const fromTs = fromDate + ' 00:00:00';
-  const toTs   = toDate   + ' 23:59:59';
+  const fromTs = fromDate + 'T00:00:00.000Z';
+  const toTs   = toDate   + 'T23:59:59.999Z';
+
+  // SQLite D1 menyimpan datetime('now') dalam format 'YYYY-MM-DD HH:MM:SS' UTC
+  // Gunakan DATE() function agar tidak terpengaruh timezone/format timestamp
 
   // ── 1. Ringkasan utama ──
   const summary = await env.DB.prepare(`
@@ -72,15 +75,15 @@ export async function onRequestGet(context) {
       COUNT(CASE WHEN status='Processing' THEN 1 END)  AS orders_processing,
       COUNT(CASE WHEN status='Cancelled'  THEN 1 END)  AS orders_cancelled
     FROM orders
-    WHERE created_at BETWEEN ? AND ?
-  `).bind(fromTs, toTs).first();
+    WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?
+  `).bind(fromDate, toDate).first();
 
   // ── 2. Total top up (credit) dalam periode ──
   const topupSummary = await env.DB.prepare(`
     SELECT COALESCE(SUM(amount), 0) AS total_topup, COUNT(*) AS topup_count
     FROM transactions
-    WHERE type='credit' AND created_at BETWEEN ? AND ?
-  `).bind(fromTs, toTs).first();
+    WHERE type='credit' AND DATE(created_at) >= ? AND DATE(created_at) <= ?
+  `).bind(fromDate, toDate).first();
 
   // ── 3. Pemasukan per hari (untuk chart) ──
   const dailyRevenue = await env.DB.prepare(`
@@ -89,10 +92,10 @@ export async function onRequestGet(context) {
       COUNT(*)          AS order_count,
       COALESCE(SUM(charge), 0) AS revenue
     FROM orders
-    WHERE created_at BETWEEN ? AND ?
+    WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?
     GROUP BY DATE(created_at)
     ORDER BY date ASC
-  `).bind(fromTs, toTs).all();
+  `).bind(fromDate, toDate).all();
 
   // ── 4. Top 10 user berdasarkan spending ──
   const topUsers = await env.DB.prepare(`
@@ -102,11 +105,11 @@ export async function onRequestGet(context) {
       COALESCE(SUM(o.charge), 0) AS total_spent
     FROM orders o
     JOIN users u ON u.id = o.user_id
-    WHERE o.created_at BETWEEN ? AND ?
+    WHERE DATE(o.created_at) >= ? AND DATE(o.created_at) <= ?
     GROUP BY u.id
     ORDER BY total_spent DESC
     LIMIT 10
-  `).bind(fromTs, toTs).all();
+  `).bind(fromDate, toDate).all();
 
   // ── 5. Top 10 service berdasarkan revenue ──
   const topServices = await env.DB.prepare(`
@@ -117,18 +120,18 @@ export async function onRequestGet(context) {
       SUM(quantity)        AS total_quantity,
       COALESCE(SUM(charge), 0) AS total_revenue
     FROM orders
-    WHERE created_at BETWEEN ? AND ?
+    WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?
     GROUP BY service_id
     ORDER BY total_revenue DESC
     LIMIT 10
-  `).bind(fromTs, toTs).all();
+  `).bind(fromDate, toDate).all();
 
   // ── 6. Jumlah user aktif (pernah order) dalam periode ──
   const activeUsers = await env.DB.prepare(`
     SELECT COUNT(DISTINCT user_id) AS count
     FROM orders
-    WHERE created_at BETWEEN ? AND ?
-  `).bind(fromTs, toTs).first();
+    WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?
+  `).bind(fromDate, toDate).first();
 
   // ── 7. Total saldo semua user (snapshot saat ini) ──
   const balanceSnapshot = await env.DB.prepare(`
