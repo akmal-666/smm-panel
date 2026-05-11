@@ -576,14 +576,14 @@ async function placeBulkOrder() {
 async function loadOrders() {
   const tbody = document.getElementById('orders-tbody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="fas fa-spinner fa-spin"></i><br/>Loading...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="9" class="empty-state"><i class="fas fa-spinner fa-spin"></i><br/>Loading...</td></tr>';
   try {
     allOrders = await API.getOrders();
     renderOrdersTable(allOrders);
     // Setelah render, fetch status realtime dari AsokaPanel untuk order yang aktif
     syncOrderStatuses();
   } catch (e) {
-    tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="fas fa-exclamation-circle"></i><br/>Failed to load orders</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="empty-state"><i class="fas fa-exclamation-circle"></i><br/>Failed to load orders</td></tr>';
   }
 }
 
@@ -640,13 +640,14 @@ function extractTarget(link) {
 function renderOrdersTable(orders) {
   const tbody = document.getElementById('orders-tbody');
   if (!orders.length) {
-    tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="fas fa-inbox"></i><br/>No orders yet</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="empty-state"><i class="fas fa-inbox"></i><br/>No orders yet</td></tr>';
     return;
   }
   tbody.innerHTML = orders.map(o => {
     // DB fields: id, provider_order_id, service_id, service_name, link, quantity, charge, start_count, remains, status
     const orderId = o.provider_order_id || o.id || '-';
     const sName = o.service_name || (allServices.find(s => s.service == o.service_id)?.name) || 'Service #' + (o.service_id || '-');
+    const sCategory = allServices.find(s => s.service == o.service_id)?.category || '';
     const status = (o.status || 'pending').toLowerCase();
     const target = extractTarget(o.link);
     const startId = 'start-' + (o.provider_order_id || o.id);
@@ -654,7 +655,8 @@ function renderOrdersTable(orders) {
     const statusId = 'status-' + (o.provider_order_id || o.id);
     return '<tr>' +
       '<td><strong>#' + escapeHtml(String(orderId)) + '</strong></td>' +
-      '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + escapeHtml(sName) + '">' + escapeHtml(sName) + '</td>' +
+      '<td>' + (sCategory ? '<span class="status-badge status-processing" style="font-size:.7rem">' + escapeHtml(sCategory) + '</span>' : '-') + '</td>' +
+      '<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + escapeHtml(sName) + '">' + escapeHtml(sName) + '</td>' +
       '<td><span class="target-cell" title="' + escapeHtml(o.link || '') + '">' + escapeHtml(target) + '</span></td>' +
       '<td>' + formatNumber(o.quantity) + '</td>' +
       '<td><strong>' + formatCurrency(o.charge || 0) + '</strong></td>' +
@@ -958,7 +960,7 @@ let allProviderServices = []; // semua service dari provider
 async function loadAdminServices() {
   const tbody = document.getElementById('admin-active-tbody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="fas fa-spinner fa-spin"></i><br/>Loading...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="9" class="empty-state"><i class="fas fa-spinner fa-spin"></i><br/>Loading...</td></tr>';
   try {
     const res = await API.adminGetServices();
     if (!res.success) throw new Error(res.error || 'Gagal load');
