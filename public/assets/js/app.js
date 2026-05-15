@@ -1319,13 +1319,15 @@ async function loadProviderBalance() {
   const el = document.getElementById('stat-provider-balance');
   if (!el) return;
   try {
-    const data = await API._fetch('/api/proxy', {
-      method: 'POST',
-      body: JSON.stringify({ action: 'balance' }),
-    });
-    if (data.balance !== undefined) {
-      const usd = parseFloat(data.balance).toFixed(2);
-      el.textContent = '$' + usd;
+    const [balData, kursData] = await Promise.all([
+      API._fetch('/api/proxy', { method: 'POST', body: JSON.stringify({ action: 'balance' }) }),
+      fetch('https://api.frankfurter.app/latest?from=USD&to=IDR').then(r => r.json()).catch(() => null),
+    ]);
+    if (balData.balance !== undefined) {
+      const usd = parseFloat(balData.balance) || 0;
+      const kurs = kursData?.rates?.IDR || 16300;
+      const idr = Math.round(usd * kurs);
+      el.innerHTML = formatCurrency(idr) + '<br><small style="color:var(--gray-400);font-size:.7rem">(' + usd.toFixed(2) + ' USD)</small>';
     } else {
       el.textContent = 'Error';
     }
