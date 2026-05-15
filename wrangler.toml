@@ -5,8 +5,7 @@ pages_build_output_dir = "./public"
 [vars]
 ENVIRONMENT = "production"
 
-# Kurs USD ke IDR (update jika perlu)
-# Bisa di-override via Cloudflare Pages dashboard → Settings → Environment Variables
+# Kurs USD ke IDR (fallback jika API frankfurter.app gagal)
 USD_TO_IDR = "16300"
 
 # Markup harga dari provider (2.0 = 100% markup, harga jual 2x harga provider)
@@ -15,15 +14,12 @@ PRICE_MARKUP = "2.0"
 # ── Variabel RAHASIA — set di Cloudflare Pages dashboard, BUKAN di sini ──
 # Settings → Environment Variables → Add variable
 #
-#   PROVIDER_API_URL  = https://asokapanel.com/api/v2
-#   PROVIDER_API_KEY  = <API key dari dashboard AsokaPanel>
+#   PROVIDER_API_URL  = https://indosmm.id/api/v2
+#   PROVIDER_API_KEY  = <API key dari dashboard IndoSMM>
 #   JWT_SECRET        = <random string min 32 karakter>
 #   WEBHOOK_SECRET    = <secret untuk callback payment gateway>
 
 # ── D1 Database binding ──
-# Setelah buat D1 database, ganti database_id di bawah:
-# Run: wrangler d1 create smm-panel-db
-# Lalu copy database_id dari output
 [[d1_databases]]
 binding = "DB"
 database_name = "smm-panel-db"

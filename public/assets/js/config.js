@@ -4,16 +4,16 @@
  * PRODUCTION SETUP:
  * 1. Set DEMO_MODE = false
  * 2. Set environment variables in Cloudflare Pages dashboard:
- *    - PROVIDER_API_URL  → https://asokapanel.com/api/v2
- *    - PROVIDER_API_KEY  → API key dari dashboard AsokaPanel
+ *    - PROVIDER_API_URL  → https://indosmm.id/api/v2
+ *    - PROVIDER_API_KEY  → API key dari dashboard IndoSMM
  *    - JWT_SECRET        → random string min 32 karakter
  *    - WEBHOOK_SECRET    → secret untuk callback payment gateway
  * 3. Buat D1 database dan jalankan migrations/schema.sql
  *
- * ASOKAPANEL SETUP:
- * - Daftar di https://asokapanel.com
+ * INDOSMM SETUP:
+ * - Daftar di https://indosmm.id
  * - Masuk ke menu API → copy API Key
- * - Set PROVIDER_API_URL = https://asokapanel.com/api/v2
+ * - Set PROVIDER_API_URL = https://indosmm.id/api/v2
  * - Set PROVIDER_API_KEY = <api key kamu>
  */
 
