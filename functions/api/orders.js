@@ -70,7 +70,7 @@ export async function onRequestPost(context) {
   ).bind(payload.sub).first();
   if (!user) return err('User tidak ditemukan', 404);
 
-  const PROVIDER_URL = env.PROVIDER_API_URL || 'https://asokapanel.com/api/v2';
+  const PROVIDER_URL = env.PROVIDER_API_URL || 'https://indosmm.id/api/v2';
   const PROVIDER_KEY = env.PROVIDER_API_KEY;
   if (!PROVIDER_KEY) return err('Provider API belum dikonfigurasi', 503);
 

@@ -23,7 +23,7 @@ export async function onRequestPost(context) {
     if (!user || user.role !== 'admin') return err('Forbidden', 403);
   }
 
-  const PROVIDER_URL = env.PROVIDER_API_URL || 'https://asokapanel.com/api/v2';
+  const PROVIDER_URL = env.PROVIDER_API_URL || 'https://indosmm.id/api/v2';
   const PROVIDER_KEY = env.PROVIDER_API_KEY;
   if (!PROVIDER_KEY) return err('Provider API belum dikonfigurasi', 503);
 

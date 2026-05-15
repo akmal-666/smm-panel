@@ -16,7 +16,7 @@ export async function onRequestOptions() { return cors(); }
 export async function onRequestPost(context) {
   const { request, env } = context;
 
-  const PROVIDER_URL = env.PROVIDER_API_URL || 'https://asokapanel.com/api/v2';
+  const PROVIDER_URL = env.PROVIDER_API_URL || 'https://indosmm.id/api/v2';
   const PROVIDER_KEY = env.PROVIDER_API_KEY;
 
   if (!PROVIDER_KEY) {
