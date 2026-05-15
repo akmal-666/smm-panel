@@ -179,6 +179,27 @@ export async function onRequestPost(context) {
     return err('Provider: ' + data.error, 422);
   }
 
+  // Untuk action balance: konversi ke IDR jika currency USD
+  if (action === 'balance' && data && data.balance !== undefined) {
+    const val = parseFloat(data.balance) || 0;
+    const currency = (data.currency || 'USD').toUpperCase();
+    if (currency !== 'IDR' && val <= 1000) {
+      // Konversi USD ke IDR via getUsdToIdr (sudah ada cache di CF edge)
+      const kurs = await getUsdToIdr(env);
+      return json({
+        balance: String(Math.round(val * kurs)),
+        balance_usd: String(val.toFixed(4)),
+        currency: 'IDR',
+        kurs: Math.round(kurs),
+      });
+    }
+    // Sudah IDR atau nilai besar — return as-is dengan currency IDR
+    return json({
+      balance: String(Math.round(val)),
+      currency: 'IDR',
+    });
+  }
+
   // Sync status order ke D1
   if (action === 'status' && env.DB) {
     try {

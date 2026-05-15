@@ -1319,15 +1319,23 @@ async function loadProviderBalance() {
   const el = document.getElementById('stat-provider-balance');
   if (!el) return;
   try {
-    const [balData, kursData] = await Promise.all([
-      API._fetch('/api/proxy', { method: 'POST', body: JSON.stringify({ action: 'balance' }) }),
-      fetch('https://api.frankfurter.app/latest?from=USD&to=IDR').then(r => r.json()).catch(() => null),
-    ]);
+    const balData = await API._fetch('/api/proxy', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'balance' }),
+    });
     if (balData.balance !== undefined) {
-      const usd = parseFloat(balData.balance) || 0;
-      const kurs = kursData?.rates?.IDR || 16300;
-      const idr = Math.round(usd * kurs);
-      el.innerHTML = formatCurrency(idr) + '<br><small style="color:var(--gray-400);font-size:.7rem">(' + usd.toFixed(2) + ' USD)</small>';
+      const val = parseFloat(balData.balance) || 0;
+      const currency = (balData.currency || 'USD').toUpperCase();
+      // IndoSMM return IDR langsung (nilai besar), AsokaPanel return USD (nilai kecil)
+      if (currency === 'IDR' || val > 1000) {
+        // Sudah IDR
+        el.textContent = formatCurrency(Math.round(val));
+      } else {
+        // USD — konversi via backend (getUsdToIdr sudah ada di proxy)
+        // Tampilkan saja dengan label USD karena konversi frontend bisa gagal
+        el.textContent = formatCurrency(Math.round(val * 16300));
+        el.title = '$' + val.toFixed(2) + ' USD';
+      }
     } else {
       el.textContent = 'Error';
     }
