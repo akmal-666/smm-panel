@@ -1,5 +1,6 @@
 /**
  * functions/api/proxy.js
+ * IndoSMM rate sudah dalam IDR — tidak perlu konversi
  */
 import { json, err, cors, requireAuth, getUsdToIdr } from '../_utils.js';
 
@@ -19,6 +20,9 @@ export async function onRequestPost(context) {
 
   const { action, order, orders } = body;
   if (!action) return err('Missing action');
+
+  // IndoSMM.id pakai IDR, provider lain pakai USD
+  const providerIsIdr = PROVIDER_URL.includes('indosmm');
 
   async function fetchProvider(params) {
     const fd = new URLSearchParams();
@@ -54,21 +58,20 @@ export async function onRequestPost(context) {
     const localResult = await env.DB.prepare('SELECT * FROM services WHERE is_active=1').all();
     const localMap = {};
     for (const s of (localResult.results || [])) localMap[String(s.service_id)] = s;
-    const kurs = await getUsdToIdr(env);
+    const kurs = providerIsIdr ? 1 : await getUsdToIdr(env);
     const filtered = providerServices
       .filter(s => localMap[String(s.service)])
       .map(s => {
         const local = localMap[String(s.service)];
         const rateRaw = parseFloat(s.rate) || 0;
-        const isIdr = rateRaw > 100;
+        const rateIdr = providerIsIdr ? rateRaw : Math.ceil(rateRaw * kurs);
         return {
           service: s.service,
           name: local.name || s.name,
           category: local.category || s.category,
           rate: local.rate,
-          rate_usd: isIdr ? null : rateRaw,
-          rate_provider_idr: isIdr ? rateRaw : Math.ceil(rateRaw * kurs),
-          kurs_usd: Math.round(kurs),
+          rate_provider_idr: rateIdr,
+          kurs_usd: providerIsIdr ? null : Math.round(kurs),
           min: local.min_order || parseInt(s.min) || 10,
           max: local.max_order || parseInt(s.max) || 100000,
         };
@@ -93,19 +96,17 @@ export async function onRequestPost(context) {
     const localResult = await env.DB.prepare('SELECT * FROM services').all();
     const localMap = {};
     for (const s of (localResult.results || [])) localMap[String(s.service_id)] = s;
-    const kurs = await getUsdToIdr(env);
+    const kurs = providerIsIdr ? 1 : await getUsdToIdr(env);
     const merged = providerServices.map(s => {
       const local = localMap[String(s.service)];
       const rateRaw = parseFloat(s.rate) || 0;
-      const isIdr = rateRaw > 100;
-      const defaultRate = isIdr ? Math.ceil(rateRaw / 10) * 10 : Math.ceil(rateRaw * kurs / 10) * 10;
+      const rateIdr = providerIsIdr ? rateRaw : Math.ceil(rateRaw * kurs / 10) * 10;
       return {
         service: s.service,
         name: s.name,
         category: s.category,
-        rate_provider_usd: isIdr ? null : s.rate,
-        rate_provider_idr: isIdr ? rateRaw : null,
-        rate_default_idr: defaultRate,
+        rate_provider_idr: rateIdr,
+        rate_default_idr: rateIdr,
         db_id: local ? local.id : null,
         custom_name: local ? local.name : null,
         custom_category: local ? local.category : null,
@@ -132,8 +133,9 @@ export async function onRequestPost(context) {
 
   if (action === 'balance' && data && data.balance !== undefined) {
     const val = parseFloat(data.balance) || 0;
-    const isIdr = val > 1000 || (data.currency || '').toUpperCase() === 'IDR';
-    if (isIdr) return json({ balance: String(Math.round(val)), currency: 'IDR' });
+    if (providerIsIdr) {
+      return json({ balance: String(Math.round(val)), currency: 'IDR' });
+    }
     const kurs = await getUsdToIdr(env);
     return json({ balance: String(Math.round(val * kurs)), balance_usd: val.toFixed(4), currency: 'IDR', kurs: Math.round(kurs) });
   }
