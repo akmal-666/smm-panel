@@ -15,7 +15,7 @@ PRICE_MARKUP = "2.0"
 # Settings → Environment Variables → Add variable
 #
 #   PROVIDER_API_URL  = https://indosmm.id/api/v2
-#   PROVIDER_API_KEY  = <API key dari dashboard IndoSMM>
+#   PROVIDER_API_KEY  = 9a0568f063e914ee40e130380ad2ccbd
 #   JWT_SECRET        = <random string min 32 karakter>
 #   WEBHOOK_SECRET    = <secret untuk callback payment gateway>
 
