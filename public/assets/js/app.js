@@ -1058,7 +1058,7 @@ function renderProviderTable() {
       '<td><strong>' + escapeHtml(String(s.service)) + '</strong></td>' +
       '<td style="word-break:break-word;white-space:normal">' + escapeHtml(s.name) + '</td>' +
       '<td><span class="status-badge status-processing">' + escapeHtml(s.category) + '</span></td>' +
-      '<td>' + formatCurrency(s.rate_default_idr || 0) + '<br/><small style="color:var(--gray-400)">$' + parseFloat(s.rate_provider_usd || 0).toFixed(4) + '/1K</small></td>' +
+      '<td><strong>' + formatCurrency(s.rate_default_idr || s.rate_provider_idr || 0) + '</strong><br/><small style="color:var(--gray-400)">/1K</small></td>' +
       '<td>' + statusBadge + '</td>' +
       '<td>' + actionBtn + '</td>' +
       '</tr>';
@@ -1066,6 +1066,32 @@ function renderProviderTable() {
 }
 
 function filterAdminProvider() { renderProviderTable(); }
+
+function exportProviderCSV() {
+  if (!allProviderServices.length) {
+    showToast('warning', 'Kosong', 'Fetch data dari provider dulu');
+    return;
+  }
+  const headers = ['ID', 'Nama Service', 'Kategori', 'Harga/1K (IDR)', 'Min', 'Max', 'Status'];
+  const rows = allProviderServices.map(s => [
+    s.service,
+    '"' + (s.name || '').replace(/"/g, '""') + '"',
+    '"' + (s.category || '').replace(/"/g, '""') + '"',
+    s.rate_default_idr || s.rate_provider_idr || 0,
+    s.min_order || 10,
+    s.max_order || 100000,
+    s.is_active === 1 ? 'Aktif' : 'Belum aktif',
+  ]);
+  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'indosmm-services-' + new Date().toISOString().split('T')[0] + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('success', 'Export Berhasil', allProviderServices.length + ' service diekspor ke CSV');
+}
 
 // Buka modal untuk aktifkan service baru dari provider
 function openActivateModal(serviceId) {
